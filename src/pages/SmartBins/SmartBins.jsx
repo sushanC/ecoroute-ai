@@ -5,6 +5,8 @@ export default function SmartBins() {
   const [bins, setBins] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterStatus, setFilterStatus] = useState('ALL')
 
   const [formData, setFormData] = useState({
     binId: '',
@@ -94,6 +96,36 @@ export default function SmartBins() {
     if (fill >= 31) return 'var(--status-info)'
     return 'var(--status-success)'
   }
+  const totalBins = bins.length
+
+const overflowBins = bins.filter(
+  bin => bin.status === 'OVERFLOW'
+).length
+
+const avgFill = bins.length
+  ? Math.round(
+      bins.reduce(
+        (sum, bin) => sum + bin.fillLevel,
+        0
+      ) / bins.length
+    )
+  : 0
+
+const filteredBins = bins.filter(bin => {
+  const matchesSearch =
+    bin.binId
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase()) ||
+    bin.location
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+
+  const matchesStatus =
+    filterStatus === 'ALL' ||
+    bin.status === filterStatus
+
+  return matchesSearch && matchesStatus
+})
 
   return (
     <div>
@@ -111,6 +143,35 @@ export default function SmartBins() {
           </button>
         </div>
       </div>
+      <div className="grid grid-cols-4 mb-6">
+  <div className="card">
+    <h2>{totalBins}</h2>
+    <p>Total Bins</p>
+  </div>
+
+  <div className="card">
+    <h2>{overflowBins}</h2>
+    <p>Overflow</p>
+  </div>
+
+  <div className="card">
+    <h2>{avgFill}%</h2>
+    <p>Average Fill</p>
+  </div>
+
+  <div className="card">
+    <h2>
+      {
+        bins.filter(
+          b =>
+            b.status === 'HIGH' ||
+            b.status === 'OVERFLOW'
+        ).length
+      }
+    </h2>
+    <p>Need Collection</p>
+  </div>
+</div>
 
 {showForm && (
   <div
@@ -186,6 +247,45 @@ export default function SmartBins() {
               />
             </div>
           ))}
+          <div
+  style={{
+    display: 'flex',
+    gap: '12px',
+    marginBottom: '24px'
+  }}
+>
+  <input
+    type="text"
+    placeholder="Search bins..."
+    value={searchTerm}
+    onChange={(e) =>
+      setSearchTerm(e.target.value)
+    }
+    style={{
+      flex: 1,
+      padding: '12px',
+      borderRadius: '12px',
+      border: '1px solid var(--border-card)'
+    }}
+  />
+
+  <select
+    value={filterStatus}
+    onChange={(e) =>
+      setFilterStatus(e.target.value)
+    }
+    style={{
+      padding: '12px',
+      borderRadius: '12px'
+    }}
+  >
+    <option value="ALL">All</option>
+    <option value="LOW">Low</option>
+    <option value="MEDIUM">Medium</option>
+    <option value="HIGH">High</option>
+    <option value="OVERFLOW">Overflow</option>
+  </select>
+</div>
 
           <div>
             <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>
@@ -254,7 +354,7 @@ export default function SmartBins() {
 )}
 
       <div className="grid grid-cols-4">
-        {bins.map((bin) => (
+        {filteredBins.map((bin) => (
           <div key={bin._id} className="card flex flex-col justify-between" style={{ padding: '20px' }}>
             <div>
               <div className="flex justify-between items-start mb-4">
@@ -290,6 +390,21 @@ export default function SmartBins() {
               disabled={bin.fillLevel === 0}
               style={{ justifyContent: 'center' }}
             >
+              <button
+  className="btn btn-primary w-full"
+  style={{
+    marginBottom: '10px',
+    justifyContent: 'center'
+  }}
+  onClick={() =>
+    window.open(
+      `https://maps.google.com/?q=${bin.lat},${bin.lng}`
+    )
+  }
+>
+  <MapPin size={14} />
+  View Location
+</button>
               <Trash2 size={14} /> Empty Bin
             </button>
           </div>
@@ -308,5 +423,6 @@ export default function SmartBins() {
         )}
       </div>
     </div>
+    
   )
 }
