@@ -1,33 +1,8 @@
-/* ========== GLOBAL VARIABLES (light modern theme) ========== */
-:root {
-  --bg-page: #f8fafc;
-  --card-bg: rgba(255, 255, 255, 0.96);
-  --panel-bg: rgba(255, 255, 255, 0.9);
-  --glass-border: 1px solid rgba(226, 232, 240, 0.6);
-  --shadow-sm: 0 8px 20px rgba(0, 0, 0, 0.03), 0 2px 6px rgba(0, 0, 0, 0.05);
-  --shadow-hover: 0 20px 30px -12px rgba(0, 0, 0, 0.12);
-  --text-primary: #0f172a;
-  --text-secondary: #334155;
-  --text-muted: #64748b;
-  --accent-green: #10b981;
-  --accent-blue: #3b82f6;
-  --radius-md: 1rem;
-  --radius-lg: 1.5rem;
-  --transition: all 0.2s ease;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  background: var(--bg-page);
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif;
-  color: var(--text-primary);
-  line-height: 1.4;
-}
+/* ===================================================
+   Dashboard.css — EcoRoute AI
+   All colors via global CSS variables from index.css
+   No local :root block (removed to avoid conflicts)
+=================================================== */
 
 /* ========== MAIN DASHBOARD CONTAINER ========== */
 .dashboard-modern {
@@ -50,11 +25,11 @@ body {
   flex-wrap: wrap;
   gap: 1.5rem;
   margin-bottom: 2rem;
-  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  background: var(--bg-surface);
   padding: 1.5rem 2rem;
   border-radius: var(--radius-lg);
-  border: var(--glass-border);
-  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-card);
+  box-shadow: var(--shadow-card);
 }
 
 .db-hero-left {
@@ -65,8 +40,8 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--status-info-bg);
+  color: var(--status-info);
   font-size: 0.75rem;
   font-weight: 600;
   padding: 0.25rem 0.75rem;
@@ -75,14 +50,19 @@ body {
   letter-spacing: 0.3px;
 }
 
+[data-theme="dark"] .db-badge {
+  color: #93c5fd;
+}
+
 .db-hero h1 {
   font-size: 1.8rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #0f172a, #2d3a5e);
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
+  letter-spacing: -0.025em;
+  background: none;
+  -webkit-background-clip: unset;
+  background-clip: unset;
 }
 
 .db-hero p {
@@ -95,21 +75,21 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-base);
+  border: 1px solid var(--border-card);
   padding: 0.6rem 1.2rem;
   border-radius: 60px;
   font-weight: 500;
   font-size: 0.85rem;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: var(--transition);
+  transition: var(--theme-transition);
   box-shadow: var(--shadow-sm);
 }
 
 .db-refresh:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
+  background: var(--bg-card-hover);
+  border-color: var(--text-muted);
   transform: translateY(-1px);
 }
 
@@ -118,12 +98,8 @@ body {
 }
 
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* ========== CARD GRID (6 cards) ========== */
@@ -135,19 +111,18 @@ body {
 }
 
 .db-card {
-  background: var(--card-bg);
-  backdrop-filter: blur(2px);
-  border-radius: var(--radius-md);
-  border: var(--glass-border);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-card);
   padding: 1.25rem;
-  transition: var(--transition);
-  box-shadow: var(--shadow-sm);
+  transition: var(--theme-transition);
+  box-shadow: var(--shadow-card);
 }
 
 .db-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-hover);
-  border-color: #cbd5e1;
+  border-color: var(--text-muted);
 }
 
 .db-card-top {
@@ -177,13 +152,17 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: #ecfdf5;
-  color: #047857;
+  background: var(--status-success-bg);
+  color: var(--status-success);
   font-size: 0.7rem;
   font-weight: 600;
   padding: 0.2rem 0.6rem;
   border-radius: 40px;
   margin-top: 0.5rem;
+}
+
+[data-theme="dark"] .db-live {
+  color: #6ee7b7;
 }
 
 .db-icon {
@@ -200,15 +179,14 @@ body {
   transform: scale(1.05);
 }
 
-/* ========== PANELS (common for charts, fleet, zone) ========== */
+/* ========== PANELS ========== */
 .db-panel {
-  background: var(--panel-bg);
-  backdrop-filter: blur(4px);
+  background: var(--bg-card);
   border-radius: var(--radius-lg);
-  border: var(--glass-border);
-  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-card);
+  box-shadow: var(--shadow-card);
   padding: 1.25rem;
-  transition: var(--transition);
+  transition: var(--theme-transition);
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -217,7 +195,7 @@ body {
 .db-panel-head {
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid #eef2ff;
+  border-bottom: 2px solid var(--border-card);
 }
 
 .db-panel-head h3 {
@@ -254,7 +232,7 @@ body {
 .chart-box {
   width: 100%;
   min-height: 300px;
-  background: #ffffff;
+  background: var(--bg-surface);
   border-radius: 1rem;
   padding: 0.5rem;
 }
@@ -286,12 +264,12 @@ body {
 }
 
 .mini-card {
-  background: #f8fafc;
+  background: var(--bg-base);
   border-radius: 1rem;
   padding: 0.9rem;
   text-align: center;
-  transition: 0.2s;
-  border: 1px solid #eef2ff;
+  transition: var(--theme-transition);
+  border: 1px solid var(--border-card);
 }
 
 .mini-card p {
@@ -310,14 +288,14 @@ body {
 }
 
 .mini-card:hover {
-  background: white;
-  border-color: #cbd5e1;
+  background: var(--bg-surface);
+  border-color: var(--text-muted);
   transform: translateY(-2px);
 }
 
 /* Coverage Zone */
 .zone-box {
-  background: linear-gradient(145deg, #f9fbfe, #f1f5f9);
+  background: var(--bg-base);
   border-radius: 1.2rem;
   padding: 1.2rem;
   text-align: center;
@@ -330,20 +308,25 @@ body {
 }
 
 .zone-icon {
-  background: #dbeafe;
+  background: var(--status-info-bg);
   width: 56px;
   height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 60%;
-  color: #2563eb;
+  color: var(--status-info);
   margin-bottom: 0.5rem;
+}
+
+[data-theme="dark"] .zone-icon {
+  color: #93c5fd;
 }
 
 .zone-box h4 {
   font-size: 1.2rem;
   font-weight: 700;
+  color: var(--text-primary);
 }
 
 .zone-box p {
@@ -351,30 +334,25 @@ body {
   color: var(--text-secondary);
 }
 
-/* ========== CHARTS STYLING (recharts overrides) ========== */
+/* ========== RECHARTS OVERRIDES ========== */
 .recharts-cartesian-grid-horizontal line,
 .recharts-cartesian-grid-vertical line {
-  stroke: #e2e8f0;
+  stroke: var(--border-card);
 }
 
 .recharts-tooltip-wrapper {
-  background: rgba(0, 0, 0, 0.75) !important;
-  backdrop-filter: blur(8px);
   border-radius: 12px !important;
-  border: none !important;
-  color: white;
-  padding: 8px 12px;
-  font-weight: 500;
 }
 
 .recharts-default-tooltip {
-  background: rgba(15, 23, 42, 0.9) !important;
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border-card) !important;
   border-radius: 12px !important;
-  border: none !important;
+  color: var(--text-primary) !important;
 }
 
 .recharts-tooltip-label {
-  color: #cbd5e1 !important;
+  color: var(--text-secondary) !important;
 }
 
 .recharts-bar-rectangle:hover {
@@ -382,52 +360,19 @@ body {
   transition: filter 0.1s;
 }
 
-/* X / Y axis labels */
 .recharts-text {
   fill: var(--text-muted);
   font-size: 0.7rem;
   font-weight: 500;
 }
 
-/* ========== RESPONSIVE ADJUSTMENTS ========== */
+/* ========== RESPONSIVE ========== */
 @media (max-width: 640px) {
-  .db-value {
-    font-size: 1.6rem;
-  }
-
-  .db-hero h1 {
-    font-size: 1.4rem;
-  }
-
-  .db-hero {
-    flex-direction: column;
-  }
-
-  .db-refresh {
-    align-self: flex-start;
-  }
-
-  .mini-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .zone-box {
-    padding: 1rem;
-  }
-
-  .chart-box,
-  .large-chart {
-    min-height: 260px;
-  }
-}
-
-/* ========== LOADING / EMPTY STATE (prevent layout shifts) ========== */
-.chart-box:empty:before {
-  content: "Loading chart...";
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: var(--text-muted);
-  font-size: 0.85rem;
+  .db-value { font-size: 1.6rem; }
+  .db-hero h1 { font-size: 1.4rem; }
+  .db-hero { flex-direction: column; }
+  .db-refresh { align-self: flex-start; }
+  .mini-grid { grid-template-columns: 1fr; }
+  .zone-box { padding: 1rem; }
+  .chart-box, .large-chart { min-height: 260px; }
 }

@@ -1,0 +1,62 @@
+/* ============================================
+   Theme Toggle — Animated track/thumb pill
+   ============================================ */
+
+.theme-toggle-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-full);
+}
+
+.theme-toggle-track {
+  display: flex;
+  align-items: center;
+  width: 44px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background: var(--border-card);
+  position: relative;
+  transition: background 0.3s ease;
+  border: 1px solid var(--border-card);
+  box-shadow: var(--shadow-xs);
+}
+
+.theme-toggle-btn.dark .theme-toggle-track {
+  background: #334155;
+  border-color: #475569;
+}
+
+.theme-toggle-thumb {
+  position: absolute;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+  box-shadow: var(--shadow-sm);
+  color: #d97706;
+}
+
+.theme-toggle-btn.dark .theme-toggle-thumb {
+  left: calc(100% - 21px);
+  background: #1e293b;
+  color: #93c5fd;
+}
+
+.theme-toggle-btn:hover .theme-toggle-track {
+  border-color: var(--primary-green);
+}
+
+.theme-toggle-btn:focus-visible {
+  outline: 2px solid var(--primary-green);
+  outline-offset: 3px;
+  border-radius: var(--radius-full);
+}

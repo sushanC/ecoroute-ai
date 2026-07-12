@@ -168,7 +168,7 @@
   top: 20px;
   width: 24px;
   height: 24px;
-  background: white;
+  background: var(--bg-surface);
   border: 1px solid var(--border-card);
   border-radius: 50%;
   display: flex;
@@ -178,7 +178,7 @@
   color: var(--text-secondary);
   box-shadow: var(--shadow-sm);
   z-index: 10;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease, var(--theme-transition);
 }
 
 .sidebar-toggle-btn:hover {

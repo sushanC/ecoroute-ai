@@ -4,7 +4,7 @@
   justify-content: space-between;
   padding: 0 40px;
   height: var(--header-height);
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--bg-header);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-card);
@@ -12,6 +12,7 @@
   top: 0;
   z-index: 50;
   flex-shrink: 0;
+  transition: var(--theme-transition);
 }
 
 .header-left {
@@ -104,7 +105,7 @@
   height: 6px;
   border-radius: var(--radius-full);
   background: var(--status-danger);
-  border: 2px solid var(--bg-surface);
+  border: 2px solid var(--bg-header);
 }
 
 /* Live Indicator */

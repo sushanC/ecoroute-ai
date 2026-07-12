@@ -1,15 +1,13 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect, useContext } from 'react'
-// import { useState, useContext } from 'react'
 import {
   Search,
-  Bell,
   HelpCircle
 } from 'lucide-react'
 import { AuthContext } from '../../context/AuthContext'
+import NotificationBell from '../NotificationBell/NotificationBell'
+import ThemeToggle from '../ThemeToggle/ThemeToggle'
 import './Header.css'
-
-
 
 const routeLabels = {
   '/dashboard': 'Dashboard',
@@ -20,13 +18,16 @@ const routeLabels = {
   '/rewards': 'Rewards',
   '/settings': 'Settings',
   '/users': 'Users',
+  '/user-dashboard': 'Dashboard',
+  '/my-requests': 'My Requests',
+  '/profile': 'Profile',
 }
 
 export default function Header() {
   const [users, setUsers] = useState([])
-const [trucks, setTrucks] = useState([])
-const [bins, setBins] = useState([])
-const [requests, setRequests] = useState([])
+  const [trucks, setTrucks] = useState([])
+  const [bins, setBins] = useState([])
+  const [requests, setRequests] = useState([])
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -39,64 +40,79 @@ const [requests, setRequests] = useState([])
   const [showResults, setShowResults] = useState(false)
 
   const searchItems = [
-  { name: 'Dashboard', path: '/dashboard', type: 'Page' },
-  { name: 'Users', path: '/users', type: 'Page' },
-  { name: 'Rewards', path: '/rewards', type: 'Page' },
+    { name: 'Dashboard', path: '/dashboard', type: 'Page' },
+    { name: 'Users', path: '/users', type: 'Page' },
+    { name: 'Rewards', path: '/rewards', type: 'Page' },
+    { name: 'Smart Bins', path: '/bins', type: 'Page' },
+    { name: 'Trucks', path: '/trucks', type: 'Page' },
+    { name: 'Routes', path: '/routes', type: 'Page' },
 
-  ...users.map(user => ({
-    name: user.name,
-    path: '/users',
-    type: 'User'
-  })),
+    ...users.map(u => ({
+      name: u.name,
+      path: '/users',
+      type: 'User'
+    })),
 
-  ...trucks.map(truck => ({
-    name: truck.truckId,
-    path: '/trucks',
-    type: 'Truck'
-  })),
+    ...trucks.map(truck => ({
+      name: truck.truckId,
+      path: '/trucks',
+      type: 'Truck'
+    })),
 
-  ...bins.map(bin => ({
-    name: bin.binId,
-    path: '/bins',
-    type: 'Bin'
-  })),
+    ...bins.map(bin => ({
+      name: bin.binId,
+      path: '/bins',
+      type: 'Bin'
+    })),
 
-  ...requests.map(req => ({
-    name: req.name,
-    path: '/requests',
-    type: 'Request'
-  }))
-]
+    ...requests.map(req => ({
+      name: req.name,
+      path: '/requests',
+      type: 'Request'
+    }))
+  ]
 
   const filteredResults = searchItems.filter(
-  (item) =>
-    item.name &&
-    item.name.toLowerCase().includes(
-      searchTerm.toLowerCase()
-    )
-)
+    (item) =>
+      item.name &&
+      item.name.toLowerCase().includes(
+        searchTerm.toLowerCase()
+      )
+  )
+
   useEffect(() => {
-  const fetchSearchData = async () => {
-    try {
-      const [usersRes, trucksRes, binsRes, requestsRes] =
-        await Promise.all([
-          fetch('http://localhost:5000/api/users'),
-          fetch('http://localhost:5000/api/trucks'),
-          fetch('http://localhost:5000/api/bins'),
-          fetch('http://localhost:5000/api/requests')
-        ])
+    const fetchSearchData = async () => {
+      try {
+        const [usersRes, trucksRes, binsRes, requestsRes] =
+          await Promise.all([
+            fetch('http://localhost:5000/api/users'),
+            fetch('http://localhost:5000/api/trucks'),
+            fetch('http://localhost:5000/api/bins'),
+            fetch('http://localhost:5000/api/requests')
+          ])
 
-      if (usersRes.ok) setUsers(await usersRes.json())
-      if (trucksRes.ok) setTrucks(await trucksRes.json())
-      if (binsRes.ok) setBins(await binsRes.json())
-      if (requestsRes.ok) setRequests(await requestsRes.json())
-    } catch (error) {
-      console.error('Search data fetch failed', error)
+        if (usersRes.ok) setUsers(await usersRes.json())
+        if (trucksRes.ok) setTrucks(await trucksRes.json())
+        if (binsRes.ok) setBins(await binsRes.json())
+        if (requestsRes.ok) setRequests(await requestsRes.json())
+      } catch (error) {
+        console.error('Search data fetch failed', error)
+      }
     }
-  }
 
-  fetchSearchData()
-}, [])
+    fetchSearchData()
+  }, [])
+
+  /* Close search dropdown on outside click */
+  useEffect(() => {
+    const handler = (e) => {
+      if (!e.target.closest('.header-search')) {
+        setShowResults(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   return (
     <header className="header">
@@ -127,7 +143,7 @@ const [requests, setRequests] = useState([])
           {showResults && searchTerm && (
             <div className="search-dropdown">
               {filteredResults.length > 0 ? (
-                filteredResults.map((item, index) => (
+                filteredResults.slice(0, 8).map((item, index) => (
                   <div
                     key={index}
                     className="search-result-item"
@@ -138,19 +154,16 @@ const [requests, setRequests] = useState([])
                     }}
                   >
                     <div className="search-result-name">
-  {item.type === 'User' && '👤 '}
-  {item.type === 'Truck' && '🚛 '}
-  {item.type === 'Bin' && '🗑 '}
-  {item.type === 'Request' && '📦 '}
-  {item.type === 'Page' && '📄 '}
-  {item.name}
-</div>
-
-<div className="search-result-type">
-  {item.type}
-</div>
-
-                    
+                      {item.type === 'User' && '👤 '}
+                      {item.type === 'Truck' && '🚛 '}
+                      {item.type === 'Bin' && '🗑 '}
+                      {item.type === 'Request' && '📦 '}
+                      {item.type === 'Page' && '📄 '}
+                      {item.name}
+                    </div>
+                    <div className="search-result-type">
+                      {item.type}
+                    </div>
                   </div>
                 ))
               ) : (
@@ -168,14 +181,11 @@ const [requests, setRequests] = useState([])
           Live
         </div>
 
-        {/* Notifications */}
-        <button
-          className="header-icon-btn"
-          title="Notifications"
-        >
-          <Bell size={17} />
-          <div className="notification-dot" />
-        </button>
+        {/* Theme Toggle */}
+        <ThemeToggle />
+
+        {/* Notification Bell */}
+        <NotificationBell />
 
         {/* Help */}
         <button
