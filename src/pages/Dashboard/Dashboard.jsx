@@ -109,43 +109,43 @@ export default function Dashboard() {
       title: 'Total Requests',
       value: stats.totalRequests,
       icon: ClipboardList,
-      bg: '#e0f2fe',
-      color: '#0284c7'
+      bg: 'var(--status-info-bg)',
+      color: 'var(--status-info-text)'
     },
     {
       title: 'Pending Requests',
       value: stats.pendingRequests,
       icon: Clock3,
-      bg: '#fef3c7',
-      color: '#d97706'
+      bg: 'var(--status-warning-bg)',
+      color: 'var(--status-warning-text)'
     },
     {
       title: 'Overflow Bins',
       value: stats.overflowBins,
       icon: AlertTriangle,
-      bg: '#fee2e2',
-      color: '#dc2626'
+      bg: 'var(--status-danger-bg)',
+      color: 'var(--status-danger-text)'
     },
     {
       title: 'Active Trucks',
       value: stats.activeTrucks,
       icon: Truck,
-      bg: '#dcfce7',
-      color: '#16a34a'
+      bg: 'var(--status-success-bg)',
+      color: 'var(--status-success-text)'
     },
     {
       title: 'Waste Collected',
       value: stats.wasteCollected,
       icon: Weight,
-      bg: '#f3e8ff',
-      color: '#9333ea'
+      bg: 'var(--status-purple-bg)',
+      color: 'var(--status-purple-text)'
     },
     {
       title: 'Fuel Saved',
       value: stats.fuelSaved,
       icon: Zap,
-      bg: '#ecfccb',
-      color: '#65a30d'
+      bg: 'var(--status-lime-bg)',
+      color: 'var(--status-lime-text)'
     }
   ]
 
@@ -171,7 +171,7 @@ export default function Dashboard() {
 
           <h1>MG Road Smart Operations Center</h1>
 
-          <p>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>
             Real-time waste collection intelligence with route optimization,
             live smart bins, and fleet performance analytics.
           </p>
@@ -213,10 +213,10 @@ export default function Dashboard() {
                         key={i}
                         fill={
                           bin.fillLevel >= 91
-                            ? '#ef4444'
+                            ? 'var(--status-danger)'
                             : bin.fillLevel >= 71
-                            ? '#f59e0b'
-                            : '#10b981'
+                            ? 'var(--status-warning)'
+                            : 'var(--status-success)'
                         }
                       />
                     ))}
@@ -245,12 +245,12 @@ export default function Dashboard() {
                   >
                     <stop
                       offset="5%"
-                      stopColor="#10b981"
+                      stopColor="var(--primary-green)"
                       stopOpacity={0.35}
                     />
                     <stop
                       offset="95%"
-                      stopColor="#10b981"
+                      stopColor="var(--primary-green)"
                       stopOpacity={0}
                     />
                   </linearGradient>
@@ -264,7 +264,7 @@ export default function Dashboard() {
                 <Area
                   type="monotone"
                   dataKey="value"
-                  stroke="#10b981"
+                  stroke="var(--primary-green)"
                   strokeWidth={3}
                   fill="url(#greenFill)"
                 />

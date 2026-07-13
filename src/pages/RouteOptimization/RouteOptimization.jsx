@@ -258,8 +258,8 @@ export default function RouteOptimization() {
           align-items:center;
           padding:6px 12px;
           border-radius:999px;
-          background:#ecfdf5;
-          color:#16a34a;
+          background:var(--status-success-bg);
+          color:var(--status-success);
           font-size:12px;
           font-weight:700;
           margin-bottom:12px;
@@ -268,12 +268,12 @@ export default function RouteOptimization() {
         .route-v2-hero h1{
           font-size:2rem;
           font-weight:800;
-          color:#0f172a;
+          color:var(--text-primary);
           margin-bottom:8px;
         }
 
         .route-v2-hero p{
-          color:#64748b;
+          color:var(--text-secondary);
           max-width:760px;
           line-height:1.7;
         }
@@ -283,8 +283,8 @@ export default function RouteOptimization() {
           padding:0 16px;
           border:none;
           border-radius:14px;
-          background:#0f172a;
-          color:white;
+          background:var(--text-primary);
+          color:var(--bg-surface);
           font-weight:700;
           display:flex;
           gap:8px;
@@ -299,11 +299,11 @@ export default function RouteOptimization() {
         }
 
         .kpi-card{
-          background:#fff;
-          border:1px solid #e5e7eb;
+          background:var(--bg-card);
+          border:1px solid var(--border-card);
           border-radius:20px;
           padding:20px;
-          box-shadow:0 8px 24px rgba(15,23,42,0.04);
+          box-shadow:var(--shadow-card);
         }
 
         .kpi-top{
@@ -313,14 +313,14 @@ export default function RouteOptimization() {
 
         .kpi-label{
           font-size:13px;
-          color:#64748b;
+          color:var(--text-secondary);
           margin-bottom:8px;
         }
 
         .kpi-value{
           font-size:2rem;
           font-weight:800;
-          color:#0f172a;
+          color:var(--text-primary);
         }
 
         .route-v2-grid{
@@ -336,11 +336,11 @@ export default function RouteOptimization() {
         }
 
         .glass-panel{
-          background:rgba(255,255,255,0.95);
-          border:1px solid #e5e7eb;
+          background:var(--bg-card);
+          border:1px solid var(--border-card);
           border-radius:24px;
           padding:22px;
-          box-shadow:0 12px 30px rgba(15,23,42,0.05);
+          box-shadow:var(--shadow-hover);
           backdrop-filter:blur(12px);
         }
 
@@ -355,49 +355,49 @@ export default function RouteOptimization() {
         .panel-head h3{
           font-size:1.08rem;
           font-weight:800;
-          color:#0f172a;
+          color:var(--text-primary);
         }
 
         .panel-head p{
           font-size:14px;
-          color:#64748b;
+          color:var(--text-secondary);
           margin-top:4px;
         }
 
         .mini-chip{
           padding:6px 10px;
           border-radius:999px;
-          background:#f8fafc;
+          background:var(--bg-base);
           display:flex;
           align-items:center;
           gap:6px;
           font-size:12px;
           font-weight:700;
-          color:#334155;
+          color:var(--text-secondary);
         }
 
         .map-holder{
           min-height:580px;
           overflow:hidden;
           border-radius:18px;
-          border:1px solid #eef2f7;
+          border:1px solid var(--border-card);
         }
 
         .map-loader{
           min-height:580px;
           display:grid;
           place-items:center;
-          color:#64748b;
+          color:var(--text-secondary);
           font-weight:700;
-          background:#f8fafc;
+          background:var(--bg-base);
         }
 
         .truck-route{
-          background:#f8fafc;
+          background:var(--bg-base);
           padding:14px;
           border-radius:16px;
           font-size:14px;
-          color:#334155;
+          color:var(--text-secondary);
           line-height:1.7;
           margin-top:12px;
         }
@@ -408,7 +408,7 @@ export default function RouteOptimization() {
         }
 
         .mini-box{
-          background:#f8fafc;
+          background:var(--bg-base);
           border-radius:16px;
           padding:14px;
           display:flex;
@@ -419,7 +419,7 @@ export default function RouteOptimization() {
         .logic-ul{
           margin:0;
           padding-left:18px;
-          color:#475569;
+          color:var(--text-secondary);
           line-height:2;
         }
 
@@ -468,17 +468,17 @@ function KpiCard({
   red,
   blue
 }) {
-  let bg = '#eff6ff'
-  let color = '#2563eb'
+  let bg = 'var(--status-info-bg)'
+  let color = 'var(--status-info)'
 
   if (green) {
-    bg = '#ecfdf5'
-    color = '#16a34a'
+    bg = 'var(--status-success-bg)'
+    color = 'var(--status-success)'
   }
 
   if (red) {
-    bg = '#fef2f2'
-    color = '#dc2626'
+    bg = 'var(--status-danger-bg)'
+    color = 'var(--status-danger)'
   }
 
   return (
@@ -517,12 +517,12 @@ function TruckPanel({
 }) {
   const colors = [
     {
-      bg: '#ecfdf5',
-      text: '#16a34a'
+      bg: 'var(--status-success-bg)',
+      text: 'var(--status-success)'
     },
     {
-      bg: '#eff6ff',
-      text: '#2563eb'
+      bg: 'var(--status-info-bg)',
+      text: 'var(--status-info)'
     }
   ]
 
@@ -590,7 +590,7 @@ function MiniMetric({
           display:'flex',
           alignItems:'center',
           gap:'8px',
-          color:'#334155'
+          color:'var(--text-secondary)'
         }}
       >
         {icon}

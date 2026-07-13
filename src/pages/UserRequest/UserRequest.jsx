@@ -244,7 +244,7 @@ const handleSubmit = async () => {
     style={{
       position: 'fixed',
       inset: 0,
-      background: 'rgba(15,23,42,0.45)',
+      background: 'rgba(17, 24, 39, 0.6)',
       backdropFilter: 'blur(6px)',
       display: 'flex',
       alignItems: 'center',
@@ -257,19 +257,19 @@ const handleSubmit = async () => {
       style={{
         width: '100%',
         maxWidth: '760px',
-        background: '#ffffff',
+        background: 'var(--bg-surface)',
         borderRadius: '24px',
         padding: '28px',
-        boxShadow: '0 20px 50px rgba(15,23,42,0.18)',
-        border: '1px solid #eef2f7',
+        boxShadow: 'var(--shadow-elevated)',
+        border: '1px solid var(--border-card)',
       }}
     >
       {/* Header */}
       <div style={{ marginBottom: '22px' }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>
           New Pickup Request
         </h2>
-        <p style={{ color: '#64748b', marginTop: '6px' }}>
+        <p style={{ color: 'var(--text-secondary)', marginTop: '6px' }}>
           Submit your waste pickup request in MG Road zone.
         </p>
       </div>
@@ -289,7 +289,7 @@ const handleSubmit = async () => {
             id="name"
             value={form.name}
             disabled
-            style={{ background: '#f8fafc' }}
+            style={{ background: 'var(--bg-base)', color: 'var(--text-secondary)' }}
           />
         </div>
 
@@ -337,14 +337,14 @@ const handleSubmit = async () => {
           padding: "10px 16px",
           borderRadius: "999px",
           border: form.wasteTypes.includes(type)
-            ? "1px solid #16a34a"
-            : "1px solid #e5e7eb",
+            ? "1px solid var(--primary-green)"
+            : "1px solid var(--border-card)",
           background: form.wasteTypes.includes(type)
-            ? "#dcfce7"
-            : "#fff",
+            ? "var(--status-success-bg)"
+            : "var(--bg-surface)",
           color: form.wasteTypes.includes(type)
-            ? "#166534"
-            : "#475569",
+            ? "var(--primary-green-dark)"
+            : "var(--text-secondary)",
           fontWeight: 600,
           cursor: "pointer",
           transition: "all .2s"

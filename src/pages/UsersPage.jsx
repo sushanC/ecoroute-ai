@@ -41,7 +41,7 @@ export default function UsersPage() {
         <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '6px' }}>
           Users
         </h1>
-        <p style={{ color: '#64748b' }}>
+        <p style={{ color: 'var(--text-secondary)' }}>
           Manage platform access and user roles.
         </p>
       </div>
@@ -54,11 +54,11 @@ export default function UsersPage() {
     {/* Card */}
     <div
       style={{
-        background: '#fff',
+        background: 'var(--bg-card)',
         borderRadius: '22px',
         overflow: 'hidden',
-        boxShadow: '0 10px 30px rgba(15,23,42,0.06)',
-        border: '1px solid #eef2f7'
+        boxShadow: 'var(--shadow-card)',
+        border: '1px solid var(--border-card)'
       }}
     >
       {/* Toolbar */}
@@ -70,7 +70,7 @@ export default function UsersPage() {
           alignItems: 'center',
           gap: '12px',
           flexWrap: 'wrap',
-          borderBottom: '1px solid #eef2f7'
+          borderBottom: '1px solid var(--border-card)'
         }}
       >
         <div
@@ -81,13 +81,13 @@ export default function UsersPage() {
             minWidth: '280px',
             flex: 1,
             maxWidth: '420px',
-            background: '#f8fafc',
-            border: '1px solid #e2e8f0',
+            background: 'var(--bg-base)',
+            border: '1px solid var(--border-card)',
             borderRadius: '14px',
             padding: '10px 14px'
           }}
         >
-          <Search size={16} color="#94a3b8" />
+          <Search size={16} color="var(--text-muted)" />
           <input
             type="text"
             placeholder="Search by name or email..."
@@ -98,7 +98,8 @@ export default function UsersPage() {
               outline: 'none',
               background: 'transparent',
               width: '100%',
-              fontSize: '0.95rem'
+              fontSize: '0.95rem',
+              color: 'var(--text-primary)'
             }}
           />
         </div>
@@ -111,7 +112,7 @@ export default function UsersPage() {
       {/* Table */}
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead style={{ background: '#f8fafc' }}>
+          <thead style={{ background: 'var(--bg-base)' }}>
             <tr>
               {['User', 'Email', 'Role', 'Rewards', 'Actions'].map((head) => (
                 <th
@@ -120,7 +121,7 @@ export default function UsersPage() {
                     textAlign: head === 'Actions' ? 'right' : 'left',
                     padding: '14px 22px',
                     fontSize: '0.85rem',
-                    color: '#64748b',
+                    color: 'var(--text-secondary)',
                     fontWeight: 700
                   }}
                 >
@@ -135,7 +136,7 @@ export default function UsersPage() {
               <tr
                 key={user._id}
                 style={{
-                  borderTop: '1px solid #f1f5f9'
+                  borderTop: '1px solid var(--border-subtle)'
                 }}
               >
                 <td style={{ padding: '16px 22px' }}>
@@ -145,8 +146,8 @@ export default function UsersPage() {
                         width: '38px',
                         height: '38px',
                         borderRadius: '50%',
-                        background: '#16a34a',
-                        color: '#fff',
+                        background: 'var(--primary-green)',
+                        color: 'white',
                         display: 'grid',
                         placeItems: 'center',
                         fontWeight: 700
@@ -158,7 +159,7 @@ export default function UsersPage() {
                   </div>
                 </td>
 
-                <td style={{ padding: '16px 22px', color: '#64748b' }}>
+                <td style={{ padding: '16px 22px', color: 'var(--text-secondary)' }}>
                   {user.email}
                 </td>
 
@@ -176,8 +177,9 @@ export default function UsersPage() {
                       width: '34px',
                       height: '34px',
                       borderRadius: '10px',
-                      border: '1px solid #e2e8f0',
-                      background: '#fff',
+                      border: '1px solid var(--border-card)',
+                      background: 'var(--bg-surface)',
+                      color: 'var(--text-primary)',
                       cursor: 'pointer'
                     }}
                   >
@@ -189,7 +191,7 @@ export default function UsersPage() {
 
             {filteredUsers.length === 0 && (
               <tr>
-                <td colSpan="5" style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+                <td colSpan="5" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
                   No users found matching your search.
                 </td>
               </tr>
@@ -202,7 +204,7 @@ export default function UsersPage() {
       <div
         style={{
           padding: '18px 22px',
-          borderTop: '1px solid #eef2f7',
+          borderTop: '1px solid var(--border-card)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -210,7 +212,7 @@ export default function UsersPage() {
           gap: '12px'
         }}
       >
-        <span style={{ fontSize: '0.9rem', color: '#64748b' }}>
+        <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
           Showing {filteredUsers.length} of {users.length} users
         </span>
 

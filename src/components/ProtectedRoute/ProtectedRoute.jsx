@@ -33,8 +33,8 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
           alignItems: 'center',
           justifyContent: 'center',
           flexDirection: 'column',
-          background: '#f8fafc',
-          color: '#dc2626',
+          background: 'var(--bg-base)',
+          color: 'var(--status-danger)',
         }}
       >
         <h2>Access Denied</h2>
@@ -47,7 +47,7 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
             padding: '10px 16px',
             border: 'none',
             borderRadius: '8px',
-            background: '#16a34a',
+            background: 'var(--primary-green)',
             color: 'white',
             cursor: 'pointer',
           }}

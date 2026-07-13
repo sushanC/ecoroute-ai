@@ -62,7 +62,7 @@
 
 .notif-header-badge {
   background: var(--status-danger);
-  color: #ffffff;
+  color: white;
   font-size: 0.65rem;
   font-weight: 700;
   min-width: 18px;
@@ -182,28 +182,23 @@
 
 .notif-icon--success {
   background: var(--status-success-bg);
-  color: var(--status-success);
+  color: var(--status-success-text);
 }
 
 .notif-icon--warning {
   background: var(--status-warning-bg);
-  color: var(--status-warning);
+  color: var(--status-warning-text);
 }
 
 .notif-icon--danger {
   background: var(--status-danger-bg);
-  color: var(--status-danger);
+  color: var(--status-danger-text);
 }
 
 .notif-icon--info {
   background: var(--status-info-bg);
-  color: var(--status-info);
+  color: var(--status-info-text);
 }
-
-[data-theme="dark"] .notif-icon--success { color: #6ee7b7; }
-[data-theme="dark"] .notif-icon--warning { color: #fdba74; }
-[data-theme="dark"] .notif-icon--danger  { color: #fca5a5; }
-[data-theme="dark"] .notif-icon--info    { color: #93c5fd; }
 
 /* ---- Body ---- */
 .notif-body {

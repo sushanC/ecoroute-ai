@@ -114,7 +114,7 @@ export default function TruckManagement() {
             {isAdmin ? 'Truck Management' : 'Driver Panel'}
           </h1>
 
-          <p style={{ color: '#64748b', marginTop: '6px' }}>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '6px' }}>
             {isAdmin
               ? 'Monitor active fleet and assignments'
               : 'Manage your assigned truck and route'}
@@ -137,7 +137,7 @@ export default function TruckManagement() {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(15,23,42,0.45)',
+            background: 'rgba(17, 24, 39, 0.6)',
             backdropFilter: 'blur(6px)',
             display: 'flex',
             alignItems: 'center',
@@ -150,12 +150,13 @@ export default function TruckManagement() {
             style={{
               width: '100%',
               maxWidth: '760px',
-              background: '#ffffff',
+              background: 'var(--bg-surface)',
               borderRadius: '22px',
               padding: '28px',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+              boxShadow: 'var(--shadow-elevated)',
               maxHeight: '90vh',
               overflowY: 'auto',
+              border: '1px solid var(--border-card)',
             }}
           >
             <h2
@@ -205,10 +206,12 @@ export default function TruckManagement() {
                       style={{
                         width: '100%',
                         padding: '12px 14px',
-                        border: '1px solid #d1d5db',
+                        border: '1px solid var(--border-card)',
                         borderRadius: '12px',
                         fontSize: '15px',
                         boxSizing: 'border-box',
+                        color: 'var(--text-primary)',
+                        background: 'var(--bg-surface)',
                       }}
                     />
                   </div>
@@ -232,9 +235,11 @@ export default function TruckManagement() {
                     style={{
                       width: '100%',
                       padding: '12px 14px',
-                      border: '1px solid #d1d5db',
+                      border: '1px solid var(--border-card)',
                       borderRadius: '12px',
                       fontSize: '15px',
+                      color: 'var(--text-primary)',
+                      background: 'var(--bg-surface)',
                     }}
                   >
                     <option value="Available">Available</option>
@@ -258,8 +263,9 @@ export default function TruckManagement() {
                   style={{
                     padding: '12px 18px',
                     borderRadius: '12px',
-                    border: '1px solid #d1d5db',
-                    background: '#fff',
+                    border: '1px solid var(--border-card)',
+                    background: 'var(--bg-surface)',
+                    color: 'var(--text-primary)',
                     cursor: 'pointer',
                   }}
                 >
@@ -272,8 +278,8 @@ export default function TruckManagement() {
                     padding: '12px 18px',
                     borderRadius: '12px',
                     border: 'none',
-                    background: '#16a34a',
-                    color: '#fff',
+                    background: 'var(--primary-green)',
+                    color: 'white',
                     fontWeight: 600,
                     cursor: 'pointer',
                   }}
@@ -303,9 +309,9 @@ export default function TruckManagement() {
               style={{
                 padding: '24px',
                 borderRadius: '22px',
-                background: '#ffffff',
-                border: '1px solid #eef2f7',
-                boxShadow: '0 10px 30px rgba(15,23,42,0.06)',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-card)',
+                boxShadow: 'var(--shadow-card)',
               }}
             >
               {/* Top */}
@@ -316,7 +322,7 @@ export default function TruckManagement() {
                   gap: '14px',
                   paddingBottom: '18px',
                   marginBottom: '18px',
-                  borderBottom: '1px solid #eef2f7',
+                  borderBottom: '1px solid var(--border-card)',
                 }}
               >
                 <div
@@ -331,8 +337,8 @@ export default function TruckManagement() {
                       width: '44px',
                       height: '44px',
                       borderRadius: '14px',
-                      background: '#dcfce7',
-                      color: '#16a34a',
+                      background: 'var(--status-success-bg)',
+                      color: 'var(--status-success)',
                       display: 'grid',
                       placeItems: 'center',
                     }}
@@ -348,7 +354,7 @@ export default function TruckManagement() {
                     <p
                       style={{
                         fontSize: '0.9rem',
-                        color: '#64748b',
+                        color: 'var(--text-secondary)',
                         marginTop: '4px',
                       }}
                     >
@@ -377,7 +383,7 @@ export default function TruckManagement() {
                     fontSize: '0.9rem',
                     fontWeight: 600,
                     marginBottom: '8px',
-                    color: '#64748b',
+                    color: 'var(--text-secondary)',
                   }}
                 >
                   Current Route
@@ -390,11 +396,11 @@ export default function TruckManagement() {
                     gap: '10px',
                     padding: '12px 14px',
                     borderRadius: '14px',
-                    background: '#f8fafc',
-                    border: '1px solid #eef2f7',
+                    background: 'var(--bg-base)',
+                    border: '1px solid var(--border-card)',
                   }}
                 >
-                  <MapPin size={16} color="#16a34a" />
+                  <MapPin size={16} color="var(--primary-green)" />
                   <span style={{ fontWeight: 600 }}>
                     {truck.route}
                   </span>
@@ -411,7 +417,7 @@ export default function TruckManagement() {
                     fontSize: '0.92rem',
                   }}
                 >
-                  <span style={{ color: '#64748b', fontWeight: 600 }}>
+                  <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>
                     Current Load
                   </span>
 
@@ -424,7 +430,7 @@ export default function TruckManagement() {
                   style={{
                     height: '10px',
                     borderRadius: '999px',
-                    background: '#e5e7eb',
+                    background: 'var(--border-card)',
                     overflow: 'hidden',
                   }}
                 >
@@ -433,7 +439,7 @@ export default function TruckManagement() {
                       width: `${percent}%`,
                       height: '100%',
                       background:
-                        percent >= 90 ? '#ef4444' : '#16a34a',
+                        percent >= 90 ? 'var(--status-danger)' : 'var(--primary-green)',
                     }}
                   />
                 </div>
@@ -445,7 +451,7 @@ export default function TruckManagement() {
                   style={{
                     marginTop: '22px',
                     paddingTop: '18px',
-                    borderTop: '1px solid #eef2f7',
+                    borderTop: '1px solid var(--border-card)',
                   }}
                 >
                   <button
@@ -469,11 +475,11 @@ export default function TruckManagement() {
           <div
             style={{
               gridColumn: '1 / -1',
-              background: '#fff',
+              background: 'var(--bg-card)',
               borderRadius: '20px',
               padding: '40px',
               textAlign: 'center',
-              border: '1px solid #eef2f7',
+              border: '1px solid var(--border-card)',
             }}
           >
             <div
@@ -482,7 +488,7 @@ export default function TruckManagement() {
                 height: '56px',
                 margin: '0 auto 14px',
                 borderRadius: '16px',
-                background: '#f1f5f9',
+                background: 'var(--bg-base)',
                 display: 'grid',
                 placeItems: 'center',
               }}
@@ -494,7 +500,7 @@ export default function TruckManagement() {
               No trucks assigned
             </h3>
 
-            <p style={{ color: '#64748b', marginTop: '8px' }}>
+            <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>
               There are currently no active trucks in the fleet.
             </p>
           </div>

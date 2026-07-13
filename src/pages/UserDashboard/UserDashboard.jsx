@@ -55,7 +55,7 @@ export default function UserDashboard() {
           >
             Welcome back, {user?.name}
           </h1>
-          <p style={{ color: '#64748b' }}>
+          <p style={{ color: 'var(--text-secondary)' }}>
             Manage pickups, rewards & your eco impact.
           </p>
         </div>
@@ -65,13 +65,13 @@ export default function UserDashboard() {
       <div
         style={{
           background:
-            'linear-gradient(135deg,#16a34a,#22c55e)',
+            'linear-gradient(135deg, var(--primary-green), var(--primary-green-light))',
           borderRadius: '28px',
           padding: '28px',
-          color: '#fff',
+          color: 'white',
           marginBottom: '24px',
           boxShadow:
-            '0 20px 50px rgba(34,197,94,0.18)',
+            'var(--shadow-elevated)',
         }}
       >
         <div
@@ -156,12 +156,12 @@ export default function UserDashboard() {
           <div
             key={i}
             style={{
-              background: '#fff',
+              background: 'var(--bg-card)',
               borderRadius: '22px',
               padding: '22px',
-              border: '1px solid #eef2f7',
+              border: '1px solid var(--border-card)',
               boxShadow:
-                '0 10px 30px rgba(15,23,42,0.05)',
+                'var(--shadow-card)',
             }}
           >
             <div
@@ -169,8 +169,8 @@ export default function UserDashboard() {
                 width: '44px',
                 height: '44px',
                 borderRadius: '14px',
-                background: '#ecfdf5',
-                color: '#16a34a',
+                background: 'var(--status-success-bg)',
+                color: 'var(--status-success)',
                 display: 'grid',
                 placeItems: 'center',
                 marginBottom: '14px',
@@ -179,7 +179,7 @@ export default function UserDashboard() {
               {card.icon}
             </div>
 
-            <p style={{ color: '#64748b' }}>
+            <p style={{ color: 'var(--text-secondary)' }}>
               {card.title}
             </p>
 
@@ -208,10 +208,10 @@ export default function UserDashboard() {
         {/* Progress Tracker */}
         <div
           style={{
-            background: '#fff',
+            background: 'var(--bg-card)',
             borderRadius: '24px',
             padding: '24px',
-            border: '1px solid #eef2f7',
+            border: '1px solid var(--border-card)',
           }}
         >
           <h3
@@ -228,7 +228,7 @@ export default function UserDashboard() {
               width: '100%',
               height: '14px',
               borderRadius: '999px',
-              background: '#f1f5f9',
+              background: 'var(--bg-base)',
               overflow: 'hidden',
               marginBottom: '12px',
             }}
@@ -238,12 +238,12 @@ export default function UserDashboard() {
                 width: `${progress}%`,
                 height: '100%',
                 background:
-                  'linear-gradient(90deg,#16a34a,#22c55e)',
+                  'linear-gradient(90deg, var(--primary-green), var(--primary-green-light))',
               }}
             />
           </div>
 
-          <p style={{ color: '#64748b' }}>
+          <p style={{ color: 'var(--text-secondary)' }}>
             {completed} completed of {total} requests
           </p>
 
@@ -251,7 +251,7 @@ export default function UserDashboard() {
             style={{
               marginTop: '18px',
               padding: '14px',
-              background: '#f8fafc',
+              background: 'var(--bg-base)',
               borderRadius: '16px',
             }}
           >
@@ -262,10 +262,10 @@ export default function UserDashboard() {
         {/* Achievements */}
         <div
           style={{
-            background: '#fff',
+            background: 'var(--bg-card)',
             borderRadius: '24px',
             padding: '24px',
-            border: '1px solid #eef2f7',
+            border: '1px solid var(--border-card)',
           }}
         >
           <h3
@@ -293,7 +293,7 @@ export default function UserDashboard() {
                 style={{
                   padding: '12px',
                   borderRadius: '14px',
-                  background: '#f8fafc',
+                  background: 'var(--bg-base)',
                   fontWeight: 700,
                 }}
               >
@@ -316,10 +316,10 @@ export default function UserDashboard() {
         {/* Quick Actions */}
         <div
           style={{
-            background: '#fff',
+            background: 'var(--bg-card)',
             borderRadius: '24px',
             padding: '24px',
-            border: '1px solid #eef2f7',
+            border: '1px solid var(--border-card)',
           }}
         >
           <h3
@@ -357,9 +357,9 @@ export default function UserDashboard() {
                 style={{
                   padding: '14px',
                   borderRadius: '16px',
-                  background: '#f8fafc',
+                  background: 'var(--bg-base)',
                   textDecoration: 'none',
-                  color: '#111827',
+                  color: 'var(--text-primary)',
                   fontWeight: 700,
                   display: 'flex',
                   justifyContent:
@@ -377,10 +377,10 @@ export default function UserDashboard() {
         {/* Insights */}
         <div
           style={{
-            background: '#fff',
+            background: 'var(--bg-card)',
             borderRadius: '24px',
             padding: '24px',
-            border: '1px solid #eef2f7',
+            border: '1px solid var(--border-card)',
           }}
         >
           <h3
@@ -419,7 +419,7 @@ export default function UserDashboard() {
                   gap: '10px',
                   padding: '12px',
                   borderRadius: '14px',
-                  background: '#f8fafc',
+                  background: 'var(--bg-base)',
                   alignItems: 'center',
                 }}
               >

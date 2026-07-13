@@ -36,12 +36,22 @@
   /* ---- STATUS COLORS (same in both modes) ---- */
   --status-success: #0e9f6e;
   --status-success-bg: #def7ec;
+  --status-success-text: #03543f;
   --status-warning: #ff8a4c;
   --status-warning-bg: #fdf6b2;
+  --status-warning-text: #8a2c0d;
   --status-danger: #f05252;
   --status-danger-bg: #fde8e8;
+  --status-danger-text: #9b1c1c;
   --status-info: #3f83f8;
   --status-info-bg: #e1effe;
+  --status-info-text: #1e429f;
+  --status-purple: #9333ea;
+  --status-purple-bg: #f3e8ff;
+  --status-purple-text: #7e22ce;
+  --status-lime: #65a30d;
+  --status-lime-bg: #ecfccb;
+  --status-lime-text: #4d7c0f;
 
   /* ---- SHADOWS ---- */
   --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -97,9 +107,17 @@
 
   /* Status bg overlays — slightly adjusted for dark */
   --status-success-bg: rgba(14, 159, 110, 0.15);
+  --status-success-text: #6ee7b7;
   --status-warning-bg: rgba(255, 138, 76, 0.15);
+  --status-warning-text: #fdba74;
   --status-danger-bg: rgba(240, 82, 82, 0.15);
+  --status-danger-text: #fca5a5;
   --status-info-bg: rgba(63, 131, 248, 0.15);
+  --status-info-text: #93c5fd;
+  --status-purple-bg: rgba(147, 51, 234, 0.15);
+  --status-purple-text: #c084fc;
+  --status-lime-bg: rgba(101, 163, 13, 0.15);
+  --status-lime-text: #a3e635;
 
   /* Primary green bg tint */
   --primary-green-bg: rgba(14, 159, 110, 0.12);
@@ -225,16 +243,11 @@ a:hover { color: var(--primary-green-dark); }
   border-radius: var(--radius-full); font-size: 0.75rem; font-weight: 600;
   letter-spacing: 0.025em; line-height: 1; border: 1px solid transparent;
 }
-.badge-success { background: var(--status-success-bg); color: #03543f; border-color: rgba(14, 159, 110, 0.3); }
-.badge-warning { background: var(--status-warning-bg); color: #8a2c0d; border-color: rgba(255, 138, 76, 0.3); }
-.badge-danger { background: var(--status-danger-bg); color: #9b1c1c; border-color: rgba(240, 82, 82, 0.3); }
-.badge-info { background: var(--status-info-bg); color: #1e429f; border-color: rgba(63, 131, 248, 0.3); }
+.badge-success { background: var(--status-success-bg); color: var(--status-success-text); border-color: rgba(14, 159, 110, 0.3); }
+.badge-warning { background: var(--status-warning-bg); color: var(--status-warning-text); border-color: rgba(255, 138, 76, 0.3); }
+.badge-danger { background: var(--status-danger-bg); color: var(--status-danger-text); border-color: rgba(240, 82, 82, 0.3); }
+.badge-info { background: var(--status-info-bg); color: var(--status-info-text); border-color: rgba(63, 131, 248, 0.3); }
 .badge-neutral { background: var(--bg-input); color: var(--text-secondary); border-color: var(--border-card); }
-
-[data-theme="dark"] .badge-success { color: #6ee7b7; }
-[data-theme="dark"] .badge-warning { color: #fdba74; }
-[data-theme="dark"] .badge-danger { color: #fca5a5; }
-[data-theme="dark"] .badge-info { color: #93c5fd; }
 
 /* ============================================
    BUTTONS

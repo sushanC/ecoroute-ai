@@ -34,7 +34,7 @@ export default function Settings() {
               ? 'Settings'
               : 'My Profile'}
           </h1>
-          <p style={{ color: '#64748b' }}>
+          <p style={{ color: 'var(--text-secondary)' }}>
             Manage account preferences and personal details
           </p>
         </div>
@@ -53,10 +53,10 @@ export default function Settings() {
         {/* Profile Card */}
         <div
           style={{
-            background: '#fff',
+            background: 'var(--bg-card)',
             borderRadius: '24px',
             padding: '24px',
-            border: '1px solid #eef2f7',
+            border: '1px solid var(--border-card)',
             textAlign: 'center',
           }}
         >
@@ -67,8 +67,8 @@ export default function Settings() {
               borderRadius: '50%',
               margin: '0 auto',
               background:
-                'linear-gradient(135deg,#16a34a,#22c55e)',
-              color: '#fff',
+                'linear-gradient(135deg, var(--primary-green), var(--primary-green-light))',
+              color: 'white',
               display: 'grid',
               placeItems: 'center',
               fontSize: '2rem',
@@ -87,8 +87,8 @@ export default function Settings() {
                 height: '34px',
                 borderRadius: '50%',
                 border: 'none',
-                background: '#0f172a',
-                color: '#fff',
+                background: 'var(--text-primary)',
+                color: 'var(--bg-surface)',
                 display: 'grid',
                 placeItems: 'center',
                 cursor: 'pointer',
@@ -107,7 +107,7 @@ export default function Settings() {
             {user?.name}
           </h3>
 
-          <p style={{ color: '#64748b' }}>
+          <p style={{ color: 'var(--text-secondary)' }}>
             {user?.email}
           </p>
 
@@ -117,8 +117,8 @@ export default function Settings() {
               display: 'inline-block',
               padding: '8px 14px',
               borderRadius: '999px',
-              background: '#ecfdf5',
-              color: '#16a34a',
+              background: 'var(--status-success-bg)',
+              color: 'var(--status-success)',
               fontWeight: 700,
               textTransform: 'capitalize',
             }}
@@ -131,10 +131,10 @@ export default function Settings() {
               marginTop: '20px',
               padding: '14px',
               borderRadius: '18px',
-              background: '#f8fafc',
+              background: 'var(--bg-base)',
             }}
           >
-            <p style={{ color: '#64748b' }}>
+            <p style={{ color: 'var(--text-secondary)' }}>
               Reward Points
             </p>
             <h2
@@ -151,10 +151,10 @@ export default function Settings() {
         {/* Edit Form */}
         <div
           style={{
-            background: '#fff',
+            background: 'var(--bg-card)',
             borderRadius: '24px',
             padding: '24px',
-            border: '1px solid #eef2f7',
+            border: '1px solid var(--border-card)',
           }}
         >
           <h3
@@ -242,8 +242,8 @@ export default function Settings() {
               padding: '0 18px',
               border: 'none',
               borderRadius: '14px',
-              background: '#16a34a',
-              color: '#fff',
+              background: 'var(--primary-green)',
+              color: 'white',
               fontWeight: 700,
               display: 'inline-flex',
               alignItems: 'center',
@@ -260,10 +260,10 @@ export default function Settings() {
       {/* Preferences */}
       <div
         style={{
-          background: '#fff',
+          background: 'var(--bg-card)',
           borderRadius: '24px',
           padding: '24px',
-          border: '1px solid #eef2f7',
+          border: '1px solid var(--border-card)',
         }}
       >
         <h3
@@ -307,7 +307,7 @@ export default function Settings() {
                 'space-between',
               padding: '14px',
               borderRadius: '16px',
-              background: '#f8fafc',
+              background: 'var(--bg-base)',
             }}
           >
             <div
@@ -344,7 +344,7 @@ function ToggleRow({
           'space-between',
         padding: '14px',
         borderRadius: '16px',
-        background: '#f8fafc',
+        background: 'var(--bg-base)',
       }}
     >
       <div
@@ -366,8 +366,8 @@ function ToggleRow({
           borderRadius: '999px',
           border: 'none',
           background: enabled
-            ? '#16a34a'
-            : '#cbd5e1',
+            ? 'var(--primary-green)'
+            : 'var(--border-card)',
           position: 'relative',
           cursor: 'pointer',
         }}
@@ -382,7 +382,7 @@ function ToggleRow({
             width: '24px',
             height: '24px',
             borderRadius: '50%',
-            background: '#fff',
+            background: 'var(--bg-surface)',
             transition: '0.2s',
           }}
         />

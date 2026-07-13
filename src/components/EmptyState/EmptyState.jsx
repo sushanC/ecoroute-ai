@@ -11,7 +11,7 @@ export default function EmptyState({
     <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px', textAlign: 'center' }}>
       <div style={{ 
         width: '64px', height: '64px', 
-        borderRadius: '50%', background: 'rgba(255,255,255,0.03)', 
+        borderRadius: '50%', background: 'var(--bg-base)', 
         border: '1px solid var(--border-subtle)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         marginBottom: '16px'

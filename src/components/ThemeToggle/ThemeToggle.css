@@ -26,8 +26,8 @@
 }
 
 .theme-toggle-btn.dark .theme-toggle-track {
-  background: #334155;
-  border-color: #475569;
+  background: var(--border-card);
+  border-color: var(--text-muted);
 }
 
 .theme-toggle-thumb {
@@ -42,13 +42,13 @@
   justify-content: center;
   transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
   box-shadow: var(--shadow-sm);
-  color: #d97706;
+  color: var(--status-warning);
 }
 
 .theme-toggle-btn.dark .theme-toggle-thumb {
   left: calc(100% - 21px);
-  background: #1e293b;
-  color: #93c5fd;
+  background: var(--bg-surface);
+  color: var(--status-info);
 }
 
 .theme-toggle-btn:hover .theme-toggle-track {

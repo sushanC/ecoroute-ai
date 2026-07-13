@@ -178,7 +178,7 @@ const filteredBins = bins.filter(bin => {
     style={{
       position: 'fixed',
       inset: 0,
-      background: 'rgba(15,23,42,0.45)',
+      background: 'rgba(17, 24, 39, 0.6)',
       backdropFilter: 'blur(6px)',
       display: 'flex',
       alignItems: 'center',
@@ -191,12 +191,13 @@ const filteredBins = bins.filter(bin => {
       style={{
         width: '100%',
         maxWidth: '760px',
-        background: '#ffffff',
+        background: 'var(--bg-surface)',
         borderRadius: '22px',
         padding: '28px',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+        boxShadow: 'var(--shadow-elevated)',
         maxHeight: '90vh',
-        overflowY: 'auto'
+        overflowY: 'auto',
+        border: '1px solid var(--border-card)'
       }}
     >
       <h2
@@ -204,7 +205,7 @@ const filteredBins = bins.filter(bin => {
           fontSize: '28px',
           fontWeight: 700,
           marginBottom: '22px',
-          color: '#0f172a'
+          color: 'var(--text-primary)'
         }}
       >
         Add Smart Bin
@@ -239,10 +240,12 @@ const filteredBins = bins.filter(bin => {
                 style={{
                   width: '100%',
                   padding: '12px 14px',
-                  border: '1px solid #d1d5db',
+                  border: '1px solid var(--border-card)',
                   borderRadius: '12px',
                   fontSize: '15px',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  color: 'var(--text-primary)',
+                  background: 'var(--bg-surface)'
                 }}
               />
             </div>
@@ -265,7 +268,9 @@ const filteredBins = bins.filter(bin => {
       flex: 1,
       padding: '12px',
       borderRadius: '12px',
-      border: '1px solid var(--border-card)'
+      border: '1px solid var(--border-card)',
+      color: 'var(--text-primary)',
+      background: 'var(--bg-surface)'
     }}
   />
 
@@ -276,7 +281,10 @@ const filteredBins = bins.filter(bin => {
     }
     style={{
       padding: '12px',
-      borderRadius: '12px'
+      borderRadius: '12px',
+      border: '1px solid var(--border-card)',
+      color: 'var(--text-primary)',
+      background: 'var(--bg-surface)'
     }}
   >
     <option value="ALL">All</option>
@@ -298,9 +306,11 @@ const filteredBins = bins.filter(bin => {
               style={{
                 width: '100%',
                 padding: '12px 14px',
-                border: '1px solid #d1d5db',
+                border: '1px solid var(--border-card)',
                 borderRadius: '12px',
-                fontSize: '15px'
+                fontSize: '15px',
+                color: 'var(--text-primary)',
+                background: 'var(--bg-surface)'
               }}
             >
               <option value="LOW">LOW</option>
@@ -325,8 +335,9 @@ const filteredBins = bins.filter(bin => {
             style={{
               padding: '12px 18px',
               borderRadius: '12px',
-              border: '1px solid #d1d5db',
-              background: '#fff',
+              border: '1px solid var(--border-card)',
+              background: 'var(--bg-surface)',
+              color: 'var(--text-primary)',
               cursor: 'pointer'
             }}
           >
@@ -339,8 +350,8 @@ const filteredBins = bins.filter(bin => {
               padding: '12px 18px',
               borderRadius: '12px',
               border: 'none',
-              background: '#16a34a',
-              color: '#fff',
+              background: 'var(--primary-green)',
+              color: 'white',
               fontWeight: 600,
               cursor: 'pointer'
             }}

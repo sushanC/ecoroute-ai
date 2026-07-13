@@ -163,7 +163,7 @@ export default function Rewards() {
             <h1 style={{ fontSize: '2rem', fontWeight: 800 }}>
               Rewards Management
             </h1>
-            <p style={{ color: '#64748b' }}>
+            <p style={{ color: 'var(--text-secondary)' }}>
               Monitor rewards and top contributors
             </p>
           </div>
@@ -199,12 +199,12 @@ export default function Rewards() {
             <div
               key={i}
               style={{
-                background: '#fff',
+                background: 'var(--bg-card)',
                 padding: '22px',
                 borderRadius: '22px',
-                border: '1px solid #eef2f7',
+                border: '1px solid var(--border-card)',
                 boxShadow:
-                  '0 10px 30px rgba(15,23,42,0.06)',
+                  'var(--shadow-card)',
               }}
             >
               <div
@@ -212,8 +212,8 @@ export default function Rewards() {
                   width: '44px',
                   height: '44px',
                   borderRadius: '14px',
-                  background: '#ecfdf5',
-                  color: '#16a34a',
+                  background: 'var(--status-success-bg)',
+                  color: 'var(--status-success)',
                   display: 'grid',
                   placeItems: 'center',
                   marginBottom: '14px',
@@ -222,7 +222,7 @@ export default function Rewards() {
                 {card.icon}
               </div>
 
-              <p style={{ color: '#64748b' }}>
+              <p style={{ color: 'var(--text-secondary)' }}>
                 {card.title}
               </p>
               <h3
@@ -240,16 +240,16 @@ export default function Rewards() {
         {/* Members Table */}
         <div
           style={{
-            background: '#fff',
+            background: 'var(--bg-card)',
             borderRadius: '24px',
-            border: '1px solid #eef2f7',
+            border: '1px solid var(--border-card)',
             overflow: 'hidden',
           }}
         >
           <div
             style={{
               padding: '16px 22px',
-              borderBottom: '1px solid #eef2f7',
+              borderBottom: '1px solid var(--border-card)',
             }}
           >
             <h3 style={{ fontWeight: 800 }}>
@@ -264,7 +264,7 @@ export default function Rewards() {
                 borderCollapse: 'collapse',
               }}
             >
-              <thead style={{ background: '#f8fafc' }}>
+              <thead style={{ background: 'var(--bg-base)' }}>
                 <tr>
                   {[
                     'Name',
@@ -277,7 +277,7 @@ export default function Rewards() {
                       style={{
                         padding: '14px 20px',
                         textAlign: 'left',
-                        color: '#64748b',
+                        color: 'var(--text-secondary)',
                       }}
                     >
                       {h}
@@ -292,7 +292,7 @@ export default function Rewards() {
                     key={m._id}
                     style={{
                       borderTop:
-                        '1px solid #f1f5f9',
+                        '1px solid var(--border-subtle)',
                     }}
                   >
                     <td style={{ padding: '14px 20px' }}>
@@ -330,7 +330,7 @@ export default function Rewards() {
           <h1 style={{ fontSize: '2rem', fontWeight: 800 }}>
             Rewards Marketplace
           </h1>
-          <p style={{ color: '#64748b' }}>
+          <p style={{ color: 'var(--text-secondary)' }}>
             Claim offers, track points & grow your rank
           </p>
         </div>
@@ -350,8 +350,8 @@ export default function Rewards() {
         <div
           style={{
             background:
-              'linear-gradient(135deg,#16a34a,#22c55e)',
-            color: '#fff',
+              'linear-gradient(135deg, var(--primary-green), var(--primary-green-light))',
+            color: 'white',
             borderRadius: '24px',
             padding: '26px',
           }}
@@ -373,10 +373,10 @@ export default function Rewards() {
         {/* Referral */}
         <div
           style={{
-            background: '#fff',
+            background: 'var(--bg-card)',
             borderRadius: '24px',
             padding: '24px',
-            border: '1px solid #eef2f7',
+            border: '1px solid var(--border-card)',
           }}
         >
           <h3
@@ -390,7 +390,7 @@ export default function Rewards() {
 
           <p
             style={{
-              color: '#64748b',
+              color: 'var(--text-secondary)',
               fontSize: '0.92rem',
               marginBottom: '14px',
             }}
@@ -412,8 +412,10 @@ export default function Rewards() {
                 flex: 1,
                 height: '44px',
                 borderRadius: '12px',
-                border: '1px solid #e5e7eb',
+                border: '1px solid var(--border-card)',
                 padding: '0 12px',
+                color: 'var(--text-primary)',
+                background: 'var(--bg-surface)',
               }}
             />
 
@@ -423,8 +425,8 @@ export default function Rewards() {
                 width: '44px',
                 border: 'none',
                 borderRadius: '12px',
-                background: '#16a34a',
-                color: '#fff',
+                background: 'var(--primary-green)',
+                color: 'white',
               }}
             >
               {copied ? (
@@ -451,8 +453,10 @@ export default function Rewards() {
                 flex: 1,
                 height: '44px',
                 borderRadius: '12px',
-                border: '1px solid #e5e7eb',
+                border: '1px solid var(--border-card)',
                 padding: '0 12px',
+                color: 'var(--text-primary)',
+                background: 'var(--bg-surface)',
               }}
             />
 
@@ -462,8 +466,8 @@ export default function Rewards() {
                 padding: '0 16px',
                 border: 'none',
                 borderRadius: '12px',
-                background: '#0f172a',
-                color: '#fff',
+                background: 'var(--text-primary)',
+                color: 'var(--bg-surface)',
                 fontWeight: 700,
               }}
             >
@@ -500,10 +504,10 @@ export default function Rewards() {
             <div
               key={i}
               style={{
-                background: '#fff',
+                background: 'var(--bg-card)',
                 borderRadius: '22px',
                 padding: '22px',
-                border: '1px solid #eef2f7',
+                border: '1px solid var(--border-card)',
               }}
             >
               <div
@@ -511,7 +515,7 @@ export default function Rewards() {
                   width: '46px',
                   height: '46px',
                   borderRadius: '14px',
-                  background: '#f8fafc',
+                  background: 'var(--bg-base)',
                   display: 'grid',
                   placeItems: 'center',
                   marginBottom: '14px',
@@ -531,7 +535,7 @@ export default function Rewards() {
 
               <p
                 style={{
-                  color: '#16a34a',
+                  color: 'var(--primary-green)',
                   fontWeight: 800,
                   margin: '10px 0 14px',
                 }}
@@ -554,11 +558,11 @@ export default function Rewards() {
                     ? 'pointer'
                     : 'not-allowed',
                   background: canClaim
-                    ? '#16a34a'
-                    : '#e5e7eb',
+                    ? 'var(--primary-green)'
+                    : 'var(--border-card)',
                   color: canClaim
-                    ? '#fff'
-                    : '#64748b',
+                    ? 'white'
+                    : 'var(--text-muted)',
                 }}
               >
                 {canClaim
@@ -584,10 +588,10 @@ export default function Rewards() {
         {/* History */}
         <div
           style={{
-            background: '#fff',
+            background: 'var(--bg-card)',
             borderRadius: '24px',
             padding: '22px',
-            border: '1px solid #eef2f7',
+            border: '1px solid var(--border-card)',
           }}
         >
           <h3
@@ -611,7 +615,7 @@ export default function Rewards() {
                 style={{
                   padding: '12px',
                   borderRadius: '14px',
-                  background: '#f8fafc',
+                  background: 'var(--bg-base)',
                 }}
               >
                 <p style={{ fontWeight: 700 }}>
@@ -619,7 +623,7 @@ export default function Rewards() {
                 </p>
                 <p
                   style={{
-                    color: '#64748b',
+                    color: 'var(--text-secondary)',
                     fontSize: '0.85rem',
                   }}
                 >
@@ -635,10 +639,10 @@ export default function Rewards() {
         {/* Leaderboard */}
         <div
           style={{
-            background: '#fff',
+            background: 'var(--bg-card)',
             borderRadius: '24px',
             padding: '22px',
-            border: '1px solid #eef2f7',
+            border: '1px solid var(--border-card)',
           }}
         >
           <h3
@@ -668,8 +672,8 @@ export default function Rewards() {
                   borderRadius: '14px',
                   background:
                     index === 0
-                      ? '#ecfdf5'
-                      : '#f8fafc',
+                      ? 'var(--status-success-bg)'
+                      : 'var(--bg-base)',
                 }}
               >
                 <div
@@ -685,8 +689,8 @@ export default function Rewards() {
                       height: '32px',
                       borderRadius: '50%',
                       background:
-                        '#16a34a',
-                      color: '#fff',
+                        'var(--primary-green)',
+                      color: 'white',
                       display: 'grid',
                       placeItems:
                         'center',
