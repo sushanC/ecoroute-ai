@@ -1,6 +1,6 @@
 import { useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
-import { Leaf, User, Mail, Lock, Shield, AlertTriangle } from 'lucide-react';
+import { Leaf, User, Mail, Lock, AlertTriangle } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
 import '../Login/Auth.css'; 
 
@@ -8,7 +8,6 @@ export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('user');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
@@ -19,7 +18,7 @@ export default function Register() {
     setError('');
     setIsLoading(true);
 
-    const result = await register(name, email, password, role);
+    const result = await register(name, email, password);
     if (!result.success) {
       setError(result.message);
     }
@@ -103,22 +102,6 @@ export default function Register() {
                 />
               </div>
             </div>
-
-            <div className="form-group">
-  <label>Select Role</label>
-  <div className="input-icon-wrapper">
-    <Shield size={18} className="input-icon" />
-    <select
-      className="auth-input"
-      value={role}
-      onChange={(e) => setRole(e.target.value)}
-      style={{ appearance: 'none', cursor: 'pointer' }}
-    >
-      <option value="user">Citizen / User</option>
-      <option value="admin">City Admin</option>
-    </select>
-  </div>
-</div>
 
             <button type="submit" className="btn btn-primary auth-btn" disabled={isLoading}>
               {isLoading ? 'Creating Account...' : 'Register Account'}

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Leaf, Mail, Lock, ArrowRight, AlertTriangle } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
 import './Auth.css';
+import GoogleLogin from '../../components/GoogleLogin';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -10,7 +11,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  const { login } = useContext(AuthContext);
+  const { login, googleLogin } = useContext(AuthContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -90,6 +91,15 @@ export default function Login() {
               {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
+
+          <div className="auth-divider"><span>or</span></div>
+          <GoogleLogin
+            disabled={isLoading}
+            loading={isLoading}
+            onAuthenticate={googleLogin}
+            onError={setError}
+            onLoadingChange={setIsLoading}
+          />
 
           <div className="auth-footer">
             <p>Don't have an account? <Link to="/register">Create an account</Link></p>

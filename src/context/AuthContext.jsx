@@ -5,6 +5,10 @@ import {
   useContext,
 } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { signOut } from 'firebase/auth'
+import { auth } from '../firebase'
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
 
 export const AuthContext = createContext()
 
@@ -30,7 +34,7 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const res = await fetch(
-        'http://localhost:5000/api/auth/me',
+        `${API_BASE_URL}/api/auth/me`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -63,7 +67,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const res = await fetch(
-        'http://localhost:5000/api/auth/login',
+        `${API_BASE_URL}/api/auth/login`,
         {
           method: 'POST',
           headers: {
@@ -110,15 +114,10 @@ export const AuthProvider = ({ children }) => {
   /* ===================================================
      Register
   =================================================== */
-  const register = async (
-    name,
-    email,
-    password,
-    role = 'user'
-  ) => {
+  const register = async (name, email, password) => {
     try {
       const res = await fetch(
-        'http://localhost:5000/api/auth/register',
+        `${API_BASE_URL}/api/auth/register`,
         {
           method: 'POST',
           headers: {
@@ -128,7 +127,6 @@ export const AuthProvider = ({ children }) => {
             name,
             email,
             password,
-            role,
           }),
         }
       )
@@ -173,6 +171,27 @@ export const AuthProvider = ({ children }) => {
     await fetchCurrentUser()
   }
 
+  const googleLogin = async (idToken) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      })
+      const data = await res.json()
+      if (!res.ok) return { success: false, message: data.message || 'Google sign-in failed' }
+
+      const loggedUser = data.user
+      setToken(data.token)
+      setUser(loggedUser)
+      localStorage.setItem('token', data.token)
+      navigate(loggedUser.role === 'admin' ? '/dashboard' : '/my-requests')
+      return { success: true }
+    } catch {
+      return { success: false, message: 'Server error. Check your connection and try again.' }
+    }
+  }
+
   /* ===================================================
      Logout
   =================================================== */
@@ -180,6 +199,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null)
     setToken(null)
     localStorage.removeItem('token')
+    signOut(auth).catch(() => {})
     navigate('/login')
   }
 
@@ -190,6 +210,7 @@ export const AuthProvider = ({ children }) => {
         token,
         loading,
         login,
+        googleLogin,
         register,
         logout,
         refreshUser,
