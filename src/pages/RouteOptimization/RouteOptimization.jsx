@@ -1,603 +1,259 @@
-import { useState, useEffect } from 'react'
-import RouteMap from '../../components/RouteMap/RouteMap'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Truck,
-  Route,
-  RefreshCw,
-  MapPinned,
-  Activity,
-  CheckCircle2,
   AlertTriangle,
+  CheckCircle2,
   Clock3,
-  Fuel,
-  Gauge,
-  TimerReset,
-  TrendingUp
+  LocateFixed,
+  MapPinned,
+  RefreshCw,
+  Route as RouteIcon,
+  Truck,
 } from 'lucide-react'
+import RouteMap from '../../components/RouteMap/RouteMap'
+import { useAuth } from '../../context/AuthContext'
+import { fetchRouteData } from '../../services/routeDataService'
+import { isValidCoordinate } from '../../services/routingService'
+import { createRoutePlans, getEntityId, getTruckColor, getTruckState } from '../../services/routePlanning'
+import './RouteOptimization.css'
+
+const OPEN_REQUEST_STATUSES = ['pending', 'in-progress']
+
+const formatDistance = (meters) => meters >= 1000
+  ? `${(meters / 1000).toFixed(1)} km`
+  : `${Math.round(meters)} m`
+
+const formatDuration = (seconds) => {
+  const minutes = Math.round(seconds / 60)
+  return minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)} hr ${minutes % 60} min`
+}
 
 export default function RouteOptimization() {
-  const [bins, setBins] = useState([])
-  const [requests, setRequests] = useState([])
-  const [trucks, setTrucks] = useState([])
+  const { token } = useAuth()
+  const [data, setData] = useState({ bins: [], requests: [], trucks: [] })
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState('')
+  const [lastUpdated, setLastUpdated] = useState(null)
+  const [selectedItem, setSelectedItem] = useState(null)
+  const [routeState, setRouteState] = useState({ status: 'empty', routes: [] })
+  const refreshController = useRef(null)
 
-  const fetchData = async () => {
-    setLoading(true)
+  const loadData = useCallback(async ({ signal, isRefresh = false } = {}) => {
+    if (isRefresh) setRefreshing(true)
+    else setLoading(true)
+    setError('')
+
     try {
-      const [binsRes, reqsRes, trucksRes] = await Promise.all([
-        fetch('http://localhost:5000/api/bins'),
-        fetch('http://localhost:5000/api/requests'),
-        fetch('http://localhost:5000/api/trucks')
-      ])
-
-      if (binsRes.ok) setBins(await binsRes.json())
-
-      if (reqsRes.ok) {
-        const data = await reqsRes.json()
-        setRequests(
-          data.filter((r) => r.status !== 'completed')
-        )
+      const nextData = await fetchRouteData({ token, signal })
+      setData(nextData)
+      setLastUpdated(new Date())
+    } catch (requestError) {
+      if (requestError.name !== 'AbortError') {
+        setError(requestError.message || 'Could not load the operations data.')
       }
-
-      if (trucksRes.ok) setTrucks(await trucksRes.json())
-    } catch (err) {
-      console.error(err)
     } finally {
-      setLoading(false)
+      if (!signal?.aborted) {
+        setLoading(false)
+        setRefreshing(false)
+      }
     }
-  }
+  }, [token])
 
   useEffect(() => {
-    fetchData()
-  }, [])
+    const controller = new AbortController()
+    Promise.resolve().then(() => loadData({ signal: controller.signal }))
+    return () => controller.abort()
+  }, [loadData])
 
-  const pending = requests.length
-  const overflow = bins.filter(
-    (b) => b.fillLevel >= 90
-  ).length
-  const active = trucks.length
+  useEffect(() => () => refreshController.current?.abort(), [])
 
-  const fuelSaved = `${Math.max(
-    8,
-    Math.min(
-      22,
-      Math.round(requests.length * 1.8)
-    )
-  )}%`
+  const refresh = () => {
+    refreshController.current?.abort()
+    const controller = new AbortController()
+    refreshController.current = controller
+    loadData({ signal: controller.signal, isRefresh: true })
+  }
 
-  const avgEta = `${12 + active} mins`
+  const onRoutesChange = useCallback((nextRouteState) => setRouteState(nextRouteState), [])
+
+  const openRequests = useMemo(() => data.requests.filter((request) =>
+    OPEN_REQUEST_STATUSES.includes(String(request.status || '').toLowerCase())), [data.requests])
+  const activeTrucks = useMemo(() => data.trucks.filter((truck) => getTruckState(truck.status) === 'active'), [data.trucks])
+  const availableTrucks = useMemo(() => data.trucks.filter((truck) => getTruckState(truck.status) === 'idle'), [data.trucks])
+  const criticalBins = useMemo(() => data.bins.filter((bin) => Number(bin.fillLevel) >= 91), [data.bins])
+
+  const invalidCoordinateCount = useMemo(() => [
+    ...data.bins,
+    ...openRequests,
+    ...data.trucks,
+  ].filter((item) => !isValidCoordinate(item)).length, [data.bins, data.trucks, openRequests])
+
+  const routeByTruck = useMemo(() => new Map(routeState.routes.map((route) => [route.truckId, route])), [routeState.routes])
+  const planByTruck = useMemo(() => new Map(createRoutePlans(data.bins, openRequests, data.trucks)
+    .map((plan) => [plan.truckId, plan])), [data.bins, data.trucks, openRequests])
+  const totalRoadDistance = routeState.routes.reduce((sum, route) => sum + route.distanceMeters, 0)
+  const longestTripSeconds = routeState.routes.reduce((longest, route) => Math.max(longest, route.durationSeconds), 0)
 
   return (
-    <div className="route-v2-page">
-      {/* Hero */}
-      <section className="route-v2-hero">
+    <div className="route-ops-page">
+      <header className="route-ops-header">
         <div>
-          <span className="route-v2-badge">
-            <Activity size={14} />
-            Smart Fleet AI Engine
-          </span>
-
-          <h1>Route Optimization Center</h1>
-
-          <p>
-            Real-time route planning with
-            nearest-neighbor logic, truck
-            balancing, live priority stops,
-            and optimized city collection
-            intelligence.
-          </p>
+          <div className="route-ops-eyebrow"><span className="route-ops-live-dot" /> FLEET OPERATIONS <span className="route-ops-eyebrow-divider">/</span> BENGALURU
+          </div>
+          <h1>Route optimization</h1>
+          <p>Explore collection assets and road-based route previews across the MG Road service area.</p>
         </div>
+        <div className="route-ops-header-actions">
+          <span className="route-ops-area-chip"><MapPinned size={15} /> MG Road, Bengaluru</span>
+          <button type="button" className="route-ops-refresh" onClick={refresh} disabled={loading || refreshing}>
+            <RefreshCw size={15} className={refreshing ? 'route-ops-spin' : ''} />
+            {refreshing ? 'Refreshing' : 'Refresh data'}
+          </button>
+        </div>
+      </header>
 
-        <button
-          className="route-v2-refresh"
-          onClick={fetchData}
-        >
-          <RefreshCw
-            size={16}
-            className={loading ? 'spin' : ''}
-          />
-          Refresh Data
-        </button>
-      </section>
+      {error && (
+        <div className="route-ops-error" role="alert">
+          <div><AlertTriangle size={18} /><span>{error}</span></div>
+          <button type="button" onClick={refresh}>Retry</button>
+        </div>
+      )}
 
-      {/* KPI Cards */}
-      <section className="route-v2-kpis">
-        <KpiCard
-          title="Active Trucks"
-          value={active}
-          icon={<Truck size={18} />}
-          green
-        />
+      {loading && !lastUpdated ? (
+        <>
+          <div className="route-ops-kpis" aria-label="Loading route data">
+            {[0, 1, 2, 3].map((key) => <div key={key} className="route-ops-kpi route-ops-skeleton"><span /><b /></div>)}
+          </div>
+          <div className="route-ops-loading-map"><div className="route-ops-skeleton-block" />Loading fleet and collection data…</div>
+        </>
+      ) : (
+        <>
+          <section className="route-ops-kpis" aria-label="Fleet summary">
+            <KpiCard label="Active trucks" value={activeTrucks.length} detail="Reported on route or busy" icon={<Truck size={18} />} tone="green" />
+            <KpiCard label="Available trucks" value={availableTrucks.length} detail="Reported available or idle" icon={<CheckCircle2 size={18} />} tone="blue" />
+            <KpiCard label="Open requests" value={openRequests.length} detail="Pending and in progress" icon={<Clock3 size={18} />} tone="violet" />
+            <KpiCard label="Critical bins" value={criticalBins.length} detail="91% fill or higher" icon={<AlertTriangle size={18} />} tone="red" />
+          </section>
 
-        <KpiCard
-          title="Pending Requests"
-          value={pending}
-          icon={<Clock3 size={18} />}
-          blue
-        />
-
-        <KpiCard
-          title="Overflow Bins"
-          value={overflow}
-          icon={<AlertTriangle size={18} />}
-          red
-        />
-
-        <KpiCard
-          title="Fuel Saved"
-          value={fuelSaved}
-          icon={<Fuel size={18} />}
-          green
-        />
-      </section>
-
-      {/* Main Layout */}
-      <section className="route-v2-grid">
-        {/* Left */}
-        <div className="route-v2-left">
-          <div className="glass-panel">
-            <div className="panel-head">
-              <div>
-                <h3>Live Route Map</h3>
-                <p>
-                  Smart bins, user requests,
-                  trucks, and optimized routes
-                </p>
-              </div>
-
-              <div className="mini-chip">
-                <MapPinned size={14} />
-                MG Road
-              </div>
-            </div>
-
-            <div className="map-holder">
-              {loading ? (
-                <div className="map-loader">
-                  Loading route engine...
+          <section className="route-ops-workspace">
+            <div className="route-ops-map-card">
+              <div className="route-ops-map-heading">
+                <div>
+                  <div className="route-ops-section-kicker"><LocateFixed size={13} /> OPERATIONS MAP</div>
+                  <h2>Collection operations map</h2>
+                  <p>Bins, pickup requests, truck positions and planned road routes</p>
                 </div>
-              ) : (
-                <RouteMap
-                  bins={bins}
-                  requests={requests}
-                  trucks={trucks}
-                />
+                <div className="route-ops-map-meta">
+                  {lastUpdated && <span>Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
+                  <span className="route-ops-map-source">OSM streets</span>
+                </div>
+              </div>
+
+              <RouteMap
+                bins={data.bins}
+                requests={openRequests}
+                trucks={data.trucks}
+                selectedItem={selectedItem}
+                onSelectItem={setSelectedItem}
+                onRoutesChange={onRoutesChange}
+              />
+
+              {invalidCoordinateCount > 0 && (
+                <p className="route-ops-coordinate-note" role="status">
+                  {invalidCoordinateCount} record{invalidCoordinateCount === 1 ? '' : 's'} omitted from the map because coordinates are missing or invalid.
+                </p>
               )}
             </div>
-          </div>
-        </div>
 
-        {/* Right */}
-        <div className="route-v2-right">
-          {trucks.map((truck, i) => (
-            <TruckPanel
-              key={truck._id || truck.truckId}
-              truck={truck}
-              index={i}
-            />
-          ))}
+            <aside className="route-ops-sidebar">
+              <section className="route-ops-side-card route-ops-route-summary">
+                <div className="route-ops-side-heading">
+                  <div><span className="route-ops-section-kicker">ROAD ROUTING</span><h3>Route estimates</h3></div>
+                  <RouteIcon size={18} />
+                </div>
+                <div className="route-ops-estimates">
+                  <div><span>Fleet road distance</span><strong>{routeState.routes.length ? formatDistance(totalRoadDistance) : '—'}</strong></div>
+                  <div><span>Longest trip estimate</span><strong>{routeState.routes.length ? formatDuration(longestTripSeconds) : '—'}</strong></div>
+                </div>
+                <p className="route-ops-footnote">
+                  {routeState.status === 'loading'
+                    ? 'Requesting road geometry from OSRM…'
+                    : routeState.routes.length
+                      ? 'OSRM road-network estimates; not traffic-aware or live GPS.'
+                      : routeState.status === 'error' || routeState.status === 'partial'
+                        ? 'Some road routes are unavailable; no straight-line distance is substituted.'
+                        : 'Route totals appear when eligible collection stops are available.'}
+                </p>
+              </section>
 
-          <div className="glass-panel">
-            <div className="panel-head">
-              <h3>Live Metrics</h3>
-              <p>
-                Fleet efficiency snapshot
-              </p>
-            </div>
+              <section className="route-ops-side-card route-ops-fleet-card">
+                <div className="route-ops-side-heading">
+                  <div><span className="route-ops-section-kicker">FLEET</span><h3>Truck routes <span>{data.trucks.length}</span></h3></div>
+                </div>
+                {loading && !data.trucks.length ? <p className="route-ops-muted">Loading fleet…</p> : data.trucks.length ? (
+                  <div className="route-ops-truck-list">
+                    {data.trucks.map((truck) => {
+                      const truckId = getEntityId(truck, 'truckId')
+                      const route = routeByTruck.get(truckId)
+                      const plan = planByTruck.get(truckId)
+                      const state = getTruckState(truck.status)
+                      const isSelected = selectedItem?.type === 'truck' && selectedItem.id === truckId
+                      return (
+                        <button
+                          type="button"
+                          className={`route-ops-truck-row${isSelected ? ' is-selected' : ''}`}
+                          key={truckId}
+                          onClick={() => setSelectedItem({ type: 'truck', id: truckId })}
+                          aria-pressed={isSelected}
+                        >
+                          <span className="route-ops-truck-color" style={{ backgroundColor: getTruckColor(truck.truckId) }} />
+                          <span className="route-ops-truck-main">
+                            <span className="route-ops-truck-title"><strong>{truck.truckId || 'Truck'}</strong><i className={`route-ops-status-dot route-ops-status-dot--${state}`} /></span>
+                            <span className="route-ops-truck-meta">{truck.status || 'Unknown status'} · {plan?.stops.length ?? 0} planned stops</span>
+                            <span className="route-ops-load-track" aria-label={`Truck load ${truck.currentLoad ?? 0} of ${truck.capacity ?? 0} kilograms`}>
+                              <i style={{ width: `${truck.capacity > 0 ? Math.min(100, Math.max(0, Number(truck.currentLoad) / Number(truck.capacity) * 100)) : 0}%`, backgroundColor: getTruckColor(truck.truckId) }} />
+                            </span>
+                            <span className="route-ops-truck-meta route-ops-truck-measure">
+                              {truck.currentLoad ?? '—'} / {truck.capacity ?? '—'} kg
+                              {route ? <><span>·</span>{formatDistance(route.distanceMeters)}<span>·</span>{formatDuration(route.durationSeconds)}</> : null}
+                            </span>
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                ) : <EmptyInline message="No trucks returned by the fleet API." />}
+              </section>
 
-            <div className="mini-metrics">
-              <MiniMetric
-                icon={<Gauge size={16} />}
-                label="Avg Speed"
-                value="32 km/h"
-              />
-              <MiniMetric
-                icon={
-                  <TimerReset size={16} />
-                }
-                label="Avg ETA"
-                value={avgEta}
-              />
-              <MiniMetric
-                icon={
-                  <TrendingUp size={16} />
-                }
-                label="On-Time"
-                value="96%"
-              />
-            </div>
-          </div>
-
-          <div className="glass-panel">
-            <div className="panel-head">
-              <h3>Optimization Logic</h3>
-              <p>
-                Core decision priorities
-              </p>
-            </div>
-
-            <ul className="logic-ul">
-              <li>
-                Overflow bins handled first
-              </li>
-              <li>
-                High priority requests first
-              </li>
-              <li>
-                Nearest stop selected next
-              </li>
-              <li>
-                Capacity-aware assignment
-              </li>
-              <li>
-                Balanced truck workload
-              </li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <style>{`
-        .route-v2-page{
-          display:flex;
-          flex-direction:column;
-          gap:24px;
-        }
-
-        .route-v2-hero{
-          display:flex;
-          justify-content:space-between;
-          gap:20px;
-          flex-wrap:wrap;
-          align-items:flex-start;
-        }
-
-        .route-v2-badge{
-          display:inline-flex;
-          gap:6px;
-          align-items:center;
-          padding:6px 12px;
-          border-radius:999px;
-          background:var(--status-success-bg);
-          color:var(--status-success);
-          font-size:12px;
-          font-weight:700;
-          margin-bottom:12px;
-        }
-
-        .route-v2-hero h1{
-          font-size:2rem;
-          font-weight:800;
-          color:var(--text-primary);
-          margin-bottom:8px;
-        }
-
-        .route-v2-hero p{
-          color:var(--text-secondary);
-          max-width:760px;
-          line-height:1.7;
-        }
-
-        .route-v2-refresh{
-          height:46px;
-          padding:0 16px;
-          border:none;
-          border-radius:14px;
-          background:var(--text-primary);
-          color:var(--bg-surface);
-          font-weight:700;
-          display:flex;
-          gap:8px;
-          align-items:center;
-          cursor:pointer;
-        }
-
-        .route-v2-kpis{
-          display:grid;
-          grid-template-columns:repeat(4,1fr);
-          gap:18px;
-        }
-
-        .kpi-card{
-          background:var(--bg-card);
-          border:1px solid var(--border-card);
-          border-radius:20px;
-          padding:20px;
-          box-shadow:var(--shadow-card);
-        }
-
-        .kpi-top{
-          display:flex;
-          justify-content:space-between;
-        }
-
-        .kpi-label{
-          font-size:13px;
-          color:var(--text-secondary);
-          margin-bottom:8px;
-        }
-
-        .kpi-value{
-          font-size:2rem;
-          font-weight:800;
-          color:var(--text-primary);
-        }
-
-        .route-v2-grid{
-          display:grid;
-          grid-template-columns:2fr 1fr;
-          gap:20px;
-        }
-
-        .route-v2-right{
-          display:flex;
-          flex-direction:column;
-          gap:20px;
-        }
-
-        .glass-panel{
-          background:var(--bg-card);
-          border:1px solid var(--border-card);
-          border-radius:24px;
-          padding:22px;
-          box-shadow:var(--shadow-hover);
-          backdrop-filter:blur(12px);
-        }
-
-        .panel-head{
-          display:flex;
-          justify-content:space-between;
-          gap:12px;
-          margin-bottom:18px;
-          align-items:flex-start;
-        }
-
-        .panel-head h3{
-          font-size:1.08rem;
-          font-weight:800;
-          color:var(--text-primary);
-        }
-
-        .panel-head p{
-          font-size:14px;
-          color:var(--text-secondary);
-          margin-top:4px;
-        }
-
-        .mini-chip{
-          padding:6px 10px;
-          border-radius:999px;
-          background:var(--bg-base);
-          display:flex;
-          align-items:center;
-          gap:6px;
-          font-size:12px;
-          font-weight:700;
-          color:var(--text-secondary);
-        }
-
-        .map-holder{
-          min-height:580px;
-          overflow:hidden;
-          border-radius:18px;
-          border:1px solid var(--border-card);
-        }
-
-        .map-loader{
-          min-height:580px;
-          display:grid;
-          place-items:center;
-          color:var(--text-secondary);
-          font-weight:700;
-          background:var(--bg-base);
-        }
-
-        .truck-route{
-          background:var(--bg-base);
-          padding:14px;
-          border-radius:16px;
-          font-size:14px;
-          color:var(--text-secondary);
-          line-height:1.7;
-          margin-top:12px;
-        }
-
-        .mini-metrics{
-          display:grid;
-          gap:12px;
-        }
-
-        .mini-box{
-          background:var(--bg-base);
-          border-radius:16px;
-          padding:14px;
-          display:flex;
-          justify-content:space-between;
-          align-items:center;
-        }
-
-        .logic-ul{
-          margin:0;
-          padding-left:18px;
-          color:var(--text-secondary);
-          line-height:2;
-        }
-
-        .spin{
-          animation:spin 1s linear infinite;
-        }
-
-        @keyframes spin{
-          to{transform:rotate(360deg)}
-        }
-
-        @media(max-width:1200px){
-          .route-v2-kpis{
-            grid-template-columns:repeat(2,1fr);
-          }
-
-          .route-v2-grid{
-            grid-template-columns:1fr;
-          }
-        }
-
-        @media(max-width:768px){
-          .route-v2-kpis{
-            grid-template-columns:1fr;
-          }
-
-          .route-v2-hero h1{
-            font-size:1.5rem;
-          }
-
-          .map-holder,
-          .map-loader{
-            min-height:420px;
-          }
-        }
-      `}</style>
+              <section className="route-ops-side-card route-ops-planner-card">
+                <span className="route-ops-section-kicker">PLANNING PREVIEW</span>
+                <h3>How stops are ordered</h3>
+                <ul>
+                  <li>Bins at 71% fill and above are included first.</li>
+                  <li>Open requests follow in high, medium, then low priority order.</li>
+                  <li>The existing planner distributes the ordered list across trucks.</li>
+                </ul>
+                <p>Assignments are a map preview and are not saved to truck records.</p>
+              </section>
+            </aside>
+          </section>
+        </>
+      )}
     </div>
   )
 }
 
-function KpiCard({
-  title,
-  value,
-  icon,
-  green,
-  red,
-  blue
-}) {
-  let bg = 'var(--status-info-bg)'
-  let color = 'var(--status-info)'
-
-  if (green) {
-    bg = 'var(--status-success-bg)'
-    color = 'var(--status-success)'
-  }
-
-  if (red) {
-    bg = 'var(--status-danger-bg)'
-    color = 'var(--status-danger)'
-  }
-
+function KpiCard({ label, value, detail, icon, tone }) {
   return (
-    <div className="kpi-card">
-      <div className="kpi-top">
-        <div>
-          <div className="kpi-label">
-            {title}
-          </div>
-          <div className="kpi-value">
-            {value}
-          </div>
-        </div>
-
-        <div
-          style={{
-            width:46,
-            height:46,
-            borderRadius:14,
-            background:bg,
-            color,
-            display:'grid',
-            placeItems:'center'
-          }}
-        >
-          {icon}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function TruckPanel({
-  truck,
-  index
-}) {
-  const colors = [
-    {
-      bg: 'var(--status-success-bg)',
-      text: 'var(--status-success)'
-    },
-    {
-      bg: 'var(--status-info-bg)',
-      text: 'var(--status-info)'
-    }
-  ]
-
-  const theme =
-    colors[index % colors.length]
-
-  const eta = `${8 + index * 3} mins`
-  const distance = `${4 + index * 1.6} km`
-
-  return (
-    <div className="glass-panel">
-      <div className="panel-head">
-        <div>
-          <h3>{truck.truckId}</h3>
-          <p>
-            Current load:{' '}
-            {truck.currentLoad}kg /{' '}
-            {truck.capacity}kg
-          </p>
-        </div>
-
-        <div
-          className="mini-chip"
-          style={{
-            background:theme.bg,
-            color:theme.text
-          }}
-        >
-          <CheckCircle2 size={14} />
-          Active
-        </div>
-      </div>
-
-      <div className="mini-metrics">
-        <MiniMetric
-          icon={<Route size={15} />}
-          label="Distance"
-          value={distance}
-        />
-
-        <MiniMetric
-          icon={<Clock3 size={15} />}
-          label="ETA"
-          value={eta}
-        />
-      </div>
-
-      <div className="truck-route">
-        Depot → Priority Stops →
-        Assigned Requests → Return
-      </div>
-    </div>
-  )
-}
-
-function MiniMetric({
-  icon,
-  label,
-  value
-}) {
-  return (
-    <div className="mini-box">
-      <div
-        style={{
-          display:'flex',
-          alignItems:'center',
-          gap:'8px',
-          color:'var(--text-secondary)'
-        }}
-      >
-        {icon}
-        {label}
-      </div>
-
+    <div className="route-ops-kpi">
+      <span className={`route-ops-kpi-icon route-ops-kpi-icon--${tone}`}>{icon}</span>
+      <span className="route-ops-kpi-label">{label}</span>
       <strong>{value}</strong>
+      <span className="route-ops-kpi-detail">{detail}</span>
     </div>
   )
+}
+
+function EmptyInline({ message }) {
+  return <p className="route-ops-empty-inline">{message}</p>
 }
