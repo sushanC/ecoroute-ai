@@ -13,13 +13,12 @@ import L from 'leaflet'
 import { LocateFixed, MapPinOff, RefreshCw, Route as RouteIcon, X } from 'lucide-react'
 import 'leaflet/dist/leaflet.css'
 import './RouteMap.css'
-import { getRoadRoute, isValidCoordinate } from '../../services/routingService'
-import { createRoutePlans, getBinSeverity, getEntityId, getTruckState } from '../../services/routePlanning'
+import { isValidCoordinate } from '../../services/routingService'
+import { getBinSeverity, getEntityId, getTruckColor, getTruckState } from '../../services/routePlanning'
 
 const DEMO_CENTER = [12.9735, 77.6075]
 const MAP_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
 const noop = () => {}
-const EMPTY_ROUTES = []
 
 const iconMarkup = {
   bin: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3m2 0-.7 13H7.7L7 7m3 3v7m4-7v7"/></svg>',
@@ -129,65 +128,16 @@ export default function RouteMap({
   bins = [],
   requests = [],
   trucks = [],
+  routes = [],
+  routeStatus = 'idle',
   selectedItem = null,
   onSelectItem = noop,
-  onRoutesChange = noop,
 }) {
   const [filters, setFilters] = useState({ bins: true, requests: true, trucks: true, routes: true })
   const [fitVersion, setFitVersion] = useState(0)
   const [tileVersion, setTileVersion] = useState(0)
   const [tileFailed, setTileFailed] = useState(false)
-  const [routeResult, setRouteResult] = useState(null)
-
-  const plans = useMemo(() => createRoutePlans(bins, requests, trucks), [bins, requests, trucks])
-  const routePlans = useMemo(() => plans.filter((plan) => plan.stops.length > 0), [plans])
-  const routePlanKey = useMemo(() => JSON.stringify(routePlans.map((plan) => [
-    plan.truckId,
-    plan.truck.lat,
-    plan.truck.lng,
-    plan.stops.map((stop) => [stop.id, stop.point.lat, stop.point.lng]),
-  ])), [routePlans])
-  const currentRouteResult = routeResult?.key === routePlanKey ? routeResult : null
-  const routes = currentRouteResult?.routes || EMPTY_ROUTES
-  const routeStatus = routePlans.length === 0 ? 'empty' : currentRouteResult?.status || 'loading'
-
-  useEffect(() => {
-    const abortController = new AbortController()
-    Promise.resolve().then(() => {
-      if (!abortController.signal.aborted) onRoutesChange({ status: routePlans.length ? 'loading' : 'empty', routes: [] })
-    })
-    if (!routePlans.length) {
-      Promise.resolve().then(() => {
-        if (!abortController.signal.aborted) setRouteResult({ key: routePlanKey, status: 'empty', routes: [] })
-      })
-      return () => abortController.abort()
-    }
-
-    Promise.all(routePlans.map(async (plan) => {
-      if (!isValidCoordinate(plan.truck)) return { truckId: plan.truckId, status: 'failed' }
-      try {
-        const roadRoute = await getRoadRoute([
-          { lat: Number(plan.truck.lat), lng: Number(plan.truck.lng) },
-          ...plan.stops.map((stop) => stop.point),
-        ], { signal: abortController.signal })
-        return { ...plan, ...roadRoute, status: 'ready' }
-      } catch (error) {
-        if (abortController.signal.aborted) return { truckId: plan.truckId, status: 'cancelled' }
-        return { truckId: plan.truckId, status: 'failed', reason: error?.message || 'Routing unavailable' }
-      }
-    })).then((results) => {
-      if (abortController.signal.aborted) return
-      const successfulRoutes = results.filter((route) => route.status === 'ready')
-      const failureCount = results.filter((route) => route.status === 'failed').length
-      const nextStatus = successfulRoutes.length === 0
-        ? 'error'
-        : failureCount > 0 ? 'partial' : 'ready'
-      setRouteResult({ key: routePlanKey, status: nextStatus, routes: successfulRoutes })
-      onRoutesChange({ status: nextStatus, routes: successfulRoutes })
-    })
-
-    return () => abortController.abort()
-  }, [onRoutesChange, routePlanKey, routePlans])
+  const routeByTruck = useMemo(() => new Map(routes.map((route) => [route.truckRecordId || route.truckId, route])), [routes])
 
   const visibleBins = useMemo(() => filters.bins ? bins.filter(isValidCoordinate) : [], [bins, filters.bins])
   const visibleRequests = useMemo(() => filters.requests
@@ -274,31 +224,31 @@ export default function RouteMap({
 
           {visibleTrucks.map((truck) => {
             const id = getEntityId(truck, 'truckId')
-            const plan = plans.find((routePlan) => routePlan.truckId === id)
+            const plan = routeByTruck.get(id)
             const state = getTruckState(truck.status)
             return (
               <Marker
                 key={`truck-${id}`}
                 position={[Number(truck.lat), Number(truck.lng)]}
-                icon={truckMarker(state, plan?.color || '#475569')}
+                icon={truckMarker(state, getTruckColor(truck.truckId || id))}
                 title={`Truck ${truck.truckId || id}: ${truck.status || 'unknown status'}`}
                 alt={`Truck ${truck.truckId || id}, ${truck.status || 'unknown status'}`}
                 eventHandlers={{ click: () => onSelectItem({ type: 'truck', id }) }}
               >
                 <Tooltip>{truck.truckId || 'Truck'} · {truck.status || 'Unknown'}</Tooltip>
-                <Popup><strong>{truck.truckId || 'Truck'}</strong><br />Status: {truck.status || 'Unknown'}<br />Load: {truck.currentLoad ?? '—'} / {truck.capacity ?? '—'} kg<br />Assigned stops: {plan?.stops.length ?? 0}</Popup>
+                <Popup><strong>{truck.truckId || 'Truck'}</strong><br />Status: {truck.status || 'Unknown'}<br />Load: {truck.currentLoad ?? '—'} / {truck.capacity ?? '—'} kg<br />Preview stops: {plan?.stops.length ?? 0}</Popup>
               </Marker>
             )
           })}
 
-          {activeRoutes.map((route) => {
-            const selected = selectedItem?.type === 'truck' && selectedItem.id === route.truckId
+          {activeRoutes.filter((route) => route.positions?.length > 1).map((route) => {
+            const selected = selectedItem?.type === 'truck' && selectedItem.id === (route.truckRecordId || route.truckId)
             return (
               <Polyline
                 key={`route-${route.truckId}`}
                 positions={route.positions}
-                pathOptions={{ color: route.color, weight: selected ? 8 : 5, opacity: selected ? 0.95 : 0.7, lineCap: 'round', lineJoin: 'round' }}
-                eventHandlers={{ click: () => onSelectItem({ type: 'truck', id: route.truckId }) }}
+                pathOptions={{ color: getTruckColor(route.truckId), weight: selected ? 8 : 5, opacity: selected ? 0.95 : 0.7, lineCap: 'round', lineJoin: 'round' }}
+                eventHandlers={{ click: () => onSelectItem({ type: 'truck', id: route.truckRecordId || route.truckId }) }}
               />
             )
           })}
@@ -320,12 +270,12 @@ export default function RouteMap({
         )}
 
         {routeStatus === 'loading' && (
-          <div className="route-map-routing-status" role="status"><RefreshCw size={14} className="route-map-spin" /> Getting road routes…</div>
+          <div className="route-map-routing-status" role="status"><RefreshCw size={14} className="route-map-spin" /> Optimizing routes with road-network costs…</div>
         )}
         {(routeStatus === 'error' || routeStatus === 'partial') && (
           <div className="route-map-routing-status route-map-routing-warning" role="status">
             <RouteIcon size={14} />
-            {routeStatus === 'partial' ? 'Some planned routes could not be drawn.' : 'Road routing is unavailable. No straight-line substitute is shown.'}
+            {routeStatus === 'partial' ? 'Preview contains unassigned work or route-provider warnings.' : 'Road routing is unavailable. No straight-line substitute is shown.'}
           </div>
         )}
 
@@ -338,7 +288,7 @@ export default function RouteMap({
           <span><i className="route-map-legend-dot route-map-legend-dot--warning" /> Threshold</span>
           <span><i className="route-map-legend-dot route-map-legend-dot--critical" /> Critical</span>
           <span><i className="route-map-legend-dot route-map-legend-dot--request" /> Pickup request</span>
-          {activeRoutes.map((route) => <span key={route.truckId}><i className="route-map-legend-line" style={{ backgroundColor: route.color }} /> {route.truck?.truckId || 'Truck'}</span>)}
+          {activeRoutes.map((route) => <span key={route.truckId}><i className="route-map-legend-line" style={{ backgroundColor: getTruckColor(route.truckId) }} /> {route.truckId || 'Truck'}</span>)}
         </div>
         <span className="route-map-attribution-note">OpenStreetMap · Planned routes via OSRM · Not GPS tracking</span>
       </div>

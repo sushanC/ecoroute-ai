@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import {
   Truck as TruckIcon,
@@ -9,7 +9,8 @@ import {
 } from 'lucide-react'
 
 export default function TruckManagement() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
 
   const [trucks, setTrucks] = useState([])
   const [loading, setLoading] = useState(true)
@@ -27,10 +28,10 @@ export default function TruckManagement() {
 
   const isAdmin = user?.role === 'admin'
 
-  const fetchTrucks = async () => {
+  const fetchTrucks = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('http://localhost:5000/api/trucks')
+      const res = await fetch(`${API_BASE_URL}/api/trucks`, { headers: { Authorization: `Bearer ${token}` } })
       if (res.ok) {
         let data = await res.json()
 
@@ -46,11 +47,11 @@ export default function TruckManagement() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [API_BASE_URL, isAdmin, token])
 
   useEffect(() => {
-    fetchTrucks()
-  }, [isAdmin])
+    Promise.resolve().then(fetchTrucks)
+  }, [fetchTrucks])
 
   const handleChange = (e) =>
     setFormData({
@@ -62,9 +63,9 @@ export default function TruckManagement() {
     e.preventDefault()
 
     try {
-      const res = await fetch('http://localhost:5000/api/trucks', {
+      const res = await fetch(`${API_BASE_URL}/api/trucks`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           ...formData,
           capacity: Number(formData.capacity),
@@ -245,6 +246,7 @@ export default function TruckManagement() {
                     <option value="Available">Available</option>
                     <option value="Busy">Busy</option>
                     <option value="Maintenance">Maintenance</option>
+                    <option value="Unavailable">Unavailable</option>
                   </select>
                 </div>
               </div>

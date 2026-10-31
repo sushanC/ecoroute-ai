@@ -5,18 +5,20 @@ import {
   Clock3,
   LocateFixed,
   MapPinned,
+  Play,
   RefreshCw,
   Route as RouteIcon,
   Truck,
 } from 'lucide-react'
 import RouteMap from '../../components/RouteMap/RouteMap'
 import { useAuth } from '../../context/AuthContext'
-import { fetchRouteData } from '../../services/routeDataService'
+import { fetchRouteData, generateRoutePreview } from '../../services/routeDataService'
 import { isValidCoordinate } from '../../services/routingService'
-import { createRoutePlans, getEntityId, getTruckColor, getTruckState } from '../../services/routePlanning'
+import { getEntityId, getTruckColor, getTruckState } from '../../services/routePlanning'
 import './RouteOptimization.css'
 
 const OPEN_REQUEST_STATUSES = ['pending', 'in-progress']
+const EMPTY_ROUTES = []
 
 const formatDistance = (meters) => meters >= 1000
   ? `${(meters / 1000).toFixed(1)} km`
@@ -35,8 +37,9 @@ export default function RouteOptimization() {
   const [error, setError] = useState('')
   const [lastUpdated, setLastUpdated] = useState(null)
   const [selectedItem, setSelectedItem] = useState(null)
-  const [routeState, setRouteState] = useState({ status: 'empty', routes: [] })
+  const [previewState, setPreviewState] = useState({ status: 'idle', result: null, error: '' })
   const refreshController = useRef(null)
+  const previewController = useRef(null)
 
   const loadData = useCallback(async ({ signal, isRefresh = false } = {}) => {
     if (isRefresh) setRefreshing(true)
@@ -47,6 +50,7 @@ export default function RouteOptimization() {
       const nextData = await fetchRouteData({ token, signal })
       setData(nextData)
       setLastUpdated(new Date())
+      setPreviewState({ status: 'idle', result: null, error: '' })
     } catch (requestError) {
       if (requestError.name !== 'AbortError') {
         setError(requestError.message || 'Could not load the operations data.')
@@ -65,16 +69,32 @@ export default function RouteOptimization() {
     return () => controller.abort()
   }, [loadData])
 
-  useEffect(() => () => refreshController.current?.abort(), [])
+  useEffect(() => () => {
+    refreshController.current?.abort()
+    previewController.current?.abort()
+  }, [])
 
   const refresh = () => {
     refreshController.current?.abort()
+    previewController.current?.abort()
+    setPreviewState({ status: 'idle', result: null, error: '' })
     const controller = new AbortController()
     refreshController.current = controller
     loadData({ signal: controller.signal, isRefresh: true })
   }
 
-  const onRoutesChange = useCallback((nextRouteState) => setRouteState(nextRouteState), [])
+  const optimize = async () => {
+    previewController.current?.abort()
+    const controller = new AbortController()
+    previewController.current = controller
+    setPreviewState({ status: 'loading', result: null, error: '' })
+    try {
+      const result = await generateRoutePreview({ token, signal: controller.signal })
+      if (!controller.signal.aborted) setPreviewState({ status: result.previewStatus, result, error: '' })
+    } catch (requestError) {
+      if (!controller.signal.aborted) setPreviewState({ status: 'error', result: null, error: requestError.message || 'Could not generate the route preview.' })
+    }
+  }
 
   const openRequests = useMemo(() => data.requests.filter((request) =>
     OPEN_REQUEST_STATUSES.includes(String(request.status || '').toLowerCase())), [data.requests])
@@ -88,11 +108,14 @@ export default function RouteOptimization() {
     ...data.trucks,
   ].filter((item) => !isValidCoordinate(item)).length, [data.bins, data.trucks, openRequests])
 
-  const routeByTruck = useMemo(() => new Map(routeState.routes.map((route) => [route.truckId, route])), [routeState.routes])
-  const planByTruck = useMemo(() => new Map(createRoutePlans(data.bins, openRequests, data.trucks)
-    .map((plan) => [plan.truckId, plan])), [data.bins, data.trucks, openRequests])
-  const totalRoadDistance = routeState.routes.reduce((sum, route) => sum + route.distanceMeters, 0)
-  const longestTripSeconds = routeState.routes.reduce((longest, route) => Math.max(longest, route.durationSeconds), 0)
+  const routeState = previewState.result
+  const routes = routeState?.routes || EMPTY_ROUTES
+  const routeByTruck = useMemo(() => new Map(routes.map((route) => [route.truckRecordId || route.truckId, route])), [routes])
+  const totalRoadDistance = routeState?.fleetSummary?.totalRoadDistanceMeters ?? 0
+  const totalRoadDuration = routeState?.fleetSummary?.totalRoadDurationSeconds
+  const previewMapStatus = previewState.status === 'loading' ? 'loading'
+    : previewState.status === 'partial' ? 'partial'
+      : previewState.status === 'error' ? 'error' : 'idle'
 
   return (
     <div className="route-ops-page">
@@ -105,6 +128,9 @@ export default function RouteOptimization() {
         </div>
         <div className="route-ops-header-actions">
           <span className="route-ops-area-chip"><MapPinned size={15} /> MG Road, Bengaluru</span>
+          <button type="button" className="route-ops-refresh" onClick={optimize} disabled={loading || refreshing || previewState.status === 'loading'}>
+            <Play size={15} /> {previewState.status === 'loading' ? 'Optimizing' : 'Generate preview'}
+          </button>
           <button type="button" className="route-ops-refresh" onClick={refresh} disabled={loading || refreshing}>
             <RefreshCw size={15} className={refreshing ? 'route-ops-spin' : ''} />
             {refreshing ? 'Refreshing' : 'Refresh data'}
@@ -118,6 +144,7 @@ export default function RouteOptimization() {
           <button type="button" onClick={refresh}>Retry</button>
         </div>
       )}
+      {previewState.error && <div className="route-ops-error" role="alert"><div><AlertTriangle size={18} /><span>{previewState.error}</span></div><button type="button" onClick={optimize}>Retry</button></div>}
 
       {loading && !lastUpdated ? (
         <>
@@ -153,9 +180,10 @@ export default function RouteOptimization() {
                 bins={data.bins}
                 requests={openRequests}
                 trucks={data.trucks}
+                routes={routes}
+                routeStatus={previewMapStatus}
                 selectedItem={selectedItem}
                 onSelectItem={setSelectedItem}
-                onRoutesChange={onRoutesChange}
               />
 
               {invalidCoordinateCount > 0 && (
@@ -172,18 +200,17 @@ export default function RouteOptimization() {
                   <RouteIcon size={18} />
                 </div>
                 <div className="route-ops-estimates">
-                  <div><span>Fleet road distance</span><strong>{routeState.routes.length ? formatDistance(totalRoadDistance) : '—'}</strong></div>
-                  <div><span>Longest trip estimate</span><strong>{routeState.routes.length ? formatDuration(longestTripSeconds) : '—'}</strong></div>
+                  <div><span>Fleet road distance</span><strong>{routes.length ? formatDistance(totalRoadDistance) : '—'}</strong></div>
+                  <div><span>Total road duration</span><strong>{Number.isFinite(totalRoadDuration) ? formatDuration(totalRoadDuration) : '—'}</strong></div>
                 </div>
                 <p className="route-ops-footnote">
-                  {routeState.status === 'loading'
-                    ? 'Requesting road geometry from OSRM…'
-                    : routeState.routes.length
-                      ? 'OSRM road-network estimates; not traffic-aware or live GPS.'
-                      : routeState.status === 'error' || routeState.status === 'partial'
-                        ? 'Some road routes are unavailable; no straight-line distance is substituted.'
-                        : 'Route totals appear when eligible collection stops are available.'}
+                  {previewState.status === 'loading'
+                    ? 'Requesting road costs and route geometry from OSRM…'
+                    : routeState
+                      ? `Backend ${routeState.algorithm?.name || 'CVRP'} preview · ${routeState.costProvider?.name || 'routing provider'} · not traffic-aware or live GPS.`
+                      : 'Generate an optimization preview to calculate road-based fleet routes.'}
                 </p>
+                {routeState && <small className="route-ops-footnote">Critical stops served: {routeState.fleetSummary.criticalStopsServed} · unassigned: {routeState.fleetSummary.criticalStopsUnassigned}</small>}
               </section>
 
               <section className="route-ops-side-card route-ops-fleet-card">
@@ -194,8 +221,7 @@ export default function RouteOptimization() {
                   <div className="route-ops-truck-list">
                     {data.trucks.map((truck) => {
                       const truckId = getEntityId(truck, 'truckId')
-                      const route = routeByTruck.get(truckId)
-                      const plan = planByTruck.get(truckId)
+                      const plan = routeByTruck.get(truckId)
                       const state = getTruckState(truck.status)
                       const isSelected = selectedItem?.type === 'truck' && selectedItem.id === truckId
                       return (
@@ -209,14 +235,15 @@ export default function RouteOptimization() {
                           <span className="route-ops-truck-color" style={{ backgroundColor: getTruckColor(truck.truckId) }} />
                           <span className="route-ops-truck-main">
                             <span className="route-ops-truck-title"><strong>{truck.truckId || 'Truck'}</strong><i className={`route-ops-status-dot route-ops-status-dot--${state}`} /></span>
-                            <span className="route-ops-truck-meta">{truck.status || 'Unknown status'} · {plan?.stops.length ?? 0} planned stops</span>
+                            <span className="route-ops-truck-meta">{truck.status || 'Unknown status'} · {plan?.stops.length ?? 0} preview stops</span>
                             <span className="route-ops-load-track" aria-label={`Truck load ${truck.currentLoad ?? 0} of ${truck.capacity ?? 0} kilograms`}>
-                              <i style={{ width: `${truck.capacity > 0 ? Math.min(100, Math.max(0, Number(truck.currentLoad) / Number(truck.capacity) * 100)) : 0}%`, backgroundColor: getTruckColor(truck.truckId) }} />
+                              <i style={{ width: `${truck.capacity > 0 ? Math.min(100, Math.max(0, Number(plan?.projectedLoadKg ?? truck.currentLoad) / Number(truck.capacity) * 100)) : 0}%`, backgroundColor: getTruckColor(truck.truckId) }} />
                             </span>
                             <span className="route-ops-truck-meta route-ops-truck-measure">
-                              {truck.currentLoad ?? '—'} / {truck.capacity ?? '—'} kg
-                              {route ? <><span>·</span>{formatDistance(route.distanceMeters)}<span>·</span>{formatDuration(route.durationSeconds)}</> : null}
+                              {plan ? <>{plan.projectedLoadKg} / {plan.capacityKg} kg projected · {plan.remainingCapacityKg} kg remaining</> : <>{truck.currentLoad ?? '—'} / {truck.capacity ?? '—'} kg current</>}
+                              {plan ? <><span>·</span>{formatDistance(plan.distanceMeters)}<span>·</span>{Number.isFinite(plan.durationSeconds) ? formatDuration(plan.durationSeconds) : 'duration unavailable'}</> : null}
                             </span>
+                            {plan?.stops?.length > 0 && <small className="route-ops-truck-meta">Order: {plan.stops.map((stop) => `${stop.priority.toUpperCase()} ${stop.label}`).join(' → ')}</small>}
                           </span>
                         </button>
                       )
@@ -226,14 +253,15 @@ export default function RouteOptimization() {
               </section>
 
               <section className="route-ops-side-card route-ops-planner-card">
-                <span className="route-ops-section-kicker">PLANNING PREVIEW</span>
-                <h3>How stops are ordered</h3>
-                <ul>
-                  <li>Bins at 71% fill and above are included first.</li>
-                  <li>Open requests follow in high, medium, then low priority order.</li>
-                  <li>The existing planner distributes the ordered list across trucks.</li>
-                </ul>
-                <p>Assignments are a map preview and are not saved to truck records.</p>
+                <span className="route-ops-section-kicker">BACKEND CVRP PREVIEW</span>
+                <h3>Assignment status</h3>
+                {routeState ? <>
+                  <p>{routeState.fleetSummary.assignedStops} assigned · {routeState.fleetSummary.unassignedStops} unassigned</p>
+                  <p>Critical stops are allocated before lower-priority work. Unknown bin demand is not estimated from fill percentage.</p>
+                  {routeState.unassignedStops.length > 0 && <ul className="route-ops-unassigned-list">{routeState.unassignedStops.map((stop) => <li key={`${stop.stopId}-${stop.reason}`}><strong>{stop.label || stop.stopId}</strong><span>{stop.priority || 'Unranked'} · {stop.reason}{stop.demandKg != null ? ` · ${stop.demandKg} kg` : ''}</span></li>)}</ul>}
+                  {routeState.warnings.map((warning, index) => <p key={`${warning.type}-${index}`} className="route-ops-footnote">{warning.truckId ? `${warning.truckId}: ` : ''}{warning.message || warning.reason || warning.type}</p>)}
+                </> : <p>Generate a preview to see capacity-feasible assignments and any work that remains unassigned.</p>}
+                <p>Preview only. No driver assignment or collection status is saved.</p>
               </section>
             </aside>
           </section>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, createElement } from 'react'
 import {
   ResponsiveContainer,
   BarChart,
@@ -26,8 +26,11 @@ import {
 } from 'lucide-react'
 
 import './Dashboard.css'
+import { useAuth } from '../../context/AuthContext'
 
-function Card({ title, value, icon: Icon, bg, color }) {
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+
+function Card({ title, value, icon: Icon, bg, color, live = true }) {
   return (
     <div className="db-card">
       <div className="db-card-top">
@@ -35,14 +38,14 @@ function Card({ title, value, icon: Icon, bg, color }) {
           <p className="db-label">{title}</p>
           <h3 className="db-value">{value}</h3>
 
-          <span className="db-live">
+          {live && <span className="db-live">
             <TrendingUp size={12} />
             Live Update
-          </span>
+          </span>}
         </div>
 
         <div className="db-icon" style={{ background: bg }}>
-          <Icon size={20} color={color} />
+          {createElement(Icon, { size: 20, color })}
         </div>
       </div>
     </div>
@@ -63,25 +66,26 @@ function Panel({ title, subtitle, children }) {
 }
 
 export default function Dashboard() {
+  const { token } = useAuth()
   const [stats, setStats] = useState({
     totalRequests: 0,
     pendingRequests: 0,
     overflowBins: 0,
     activeTrucks: 0,
     wasteCollected: '0t',
-    fuelSaved: '0%'
+    fuelSaved: null
   })
 
   const [bins, setBins] = useState([])
   const [loading, setLoading] = useState(false)
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
 
     try {
       const [statsRes, binsRes] = await Promise.all([
-        fetch('http://localhost:5000/api/dashboard/stats'),
-        fetch('http://localhost:5000/api/bins')
+        fetch(`${API_BASE_URL}/api/dashboard/stats`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE_URL}/api/bins`, { headers: { Authorization: `Bearer ${token}` } })
       ])
 
       if (statsRes.ok) {
@@ -98,11 +102,11 @@ export default function Dashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [token])
 
   useEffect(() => {
-    fetchData()
-  }, [])
+    Promise.resolve().then(fetchData)
+  }, [fetchData])
 
   const cards = [
     {
@@ -142,10 +146,11 @@ export default function Dashboard() {
     },
     {
       title: 'Fuel Saved',
-      value: stats.fuelSaved,
+      value: stats.fuelSaved ?? 'Not measured',
       icon: Zap,
       bg: 'var(--status-lime-bg)',
-      color: 'var(--status-lime-text)'
+      color: 'var(--status-lime-text)',
+      live: false,
     }
   ]
 
@@ -282,10 +287,10 @@ export default function Dashboard() {
         >
           <div className="mini-grid">
             {[
-              ['Avg Route Time', '22 min'],
-              ['Fuel Efficiency', '+' + stats.fuelSaved],
-              ['On-Time Pickups', '96%'],
-              ['Fleet Health', 'Excellent']
+              ['Avg Route Time', 'Not measured'],
+              ['Fuel Savings', stats.fuelSaved ?? 'Not measured'],
+              ['On-Time Pickups', 'Not measured'],
+              ['Fleet Health', 'Not measured']
             ].map(([label, val]) => (
               <div className="mini-card" key={label}>
                 <p>{label}</p>

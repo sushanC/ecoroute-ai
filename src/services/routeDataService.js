@@ -24,3 +24,18 @@ export async function fetchRouteData({ token, signal } = {}) {
 
   return { bins, requests, trucks }
 }
+
+export async function generateRoutePreview({ token, signal } = {}) {
+  const response = await fetch(`${API_BASE_URL}/api/routes/optimize-preview`, {
+    method: 'POST',
+    signal,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: '{}',
+  })
+  const data = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(data.message || `Unable to generate route preview (${response.status}).`)
+  return data
+}

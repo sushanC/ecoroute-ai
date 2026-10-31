@@ -1,10 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Trash2, RefreshCw, Plus, MapPin } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
 
 export default function SmartBins() {
+  const { token } = useAuth()
   const [bins, setBins] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [demandEdits, setDemandEdits] = useState({})
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('ALL')
 
@@ -15,12 +20,15 @@ export default function SmartBins() {
     lat: '',
     lng: '',
     status: 'LOW',
+    collectionDemandKg: '',
+    collectionDemandSource: '',
+    collectionDemandMethod: '',
   })
 
-  const fetchBins = async () => {
+  const fetchBins = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('http://localhost:5000/api/bins')
+      const res = await fetch(`${API_BASE_URL}/api/bins`, { headers: { Authorization: `Bearer ${token}` } })
       if (res.ok) {
         const data = await res.json()
         setBins(data)
@@ -30,11 +38,11 @@ export default function SmartBins() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [token])
 
   useEffect(() => {
-    fetchBins()
-  }, [])
+    Promise.resolve().then(fetchBins)
+  }, [fetchBins])
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -43,20 +51,27 @@ export default function SmartBins() {
   const handleAddBin = async (e) => {
     e.preventDefault()
     try {
-      const res = await fetch('http://localhost:5000/api/bins', {
+      const payload = {
+        binId: formData.binId,
+        location: formData.location,
+        fillLevel: Number(formData.fillLevel),
+        lat: Number(formData.lat),
+        lng: Number(formData.lng),
+      }
+      if (formData.collectionDemandKg !== '') {
+        payload.collectionDemandKg = Number(formData.collectionDemandKg)
+        payload.collectionDemandSource = formData.collectionDemandSource
+        if (formData.collectionDemandSource === 'calibrated_estimate') payload.collectionDemandMethod = formData.collectionDemandMethod
+      }
+      const res = await fetch(`${API_BASE_URL}/api/bins`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          fillLevel: Number(formData.fillLevel),
-          lat: Number(formData.lat),
-          lng: Number(formData.lng),
-        }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
       })
 
       if (res.ok) {
         setShowForm(false)
-        setFormData({ binId: '', location: '', fillLevel: '', lat: '', lng: '', status: 'LOW' })
+        setFormData({ binId: '', location: '', fillLevel: '', lat: '', lng: '', status: 'LOW', collectionDemandKg: '', collectionDemandSource: '', collectionDemandMethod: '' })
         fetchBins()
       } else {
         alert('Failed to add bin')
@@ -69,14 +84,47 @@ export default function SmartBins() {
 
   const handleEmptyBin = async (id) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/bins/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/bins/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fillLevel: 0, status: 'LOW' }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ fillLevel: 0, collectionDemandKg: null, collectionDemandSource: null, collectionDemandMethod: null }),
       })
       if (res.ok) fetchBins()
     } catch (error) {
       console.error('Failed to empty bin', error)
+    }
+  }
+
+  const saveBinDemand = async (bin) => {
+    const current = demandEdits[bin._id] || {
+      kg: bin.collectionDemandKg ?? '',
+      source: bin.collectionDemandSource || '',
+      method: bin.collectionDemandMethod || '',
+    }
+    if (current.kg !== '' && (!Number.isFinite(Number(current.kg)) || Number(current.kg) <= 0 || !current.source)) {
+      alert('Enter a positive kg demand and its source, or leave demand blank to mark it unknown.')
+      return
+    }
+    if (current.source === 'calibrated_estimate' && !current.method.trim()) {
+      alert('Document the calibration method for an estimated demand.')
+      return
+    }
+    const payload = current.kg === ''
+      ? { collectionDemandKg: null, collectionDemandSource: null, collectionDemandMethod: null }
+      : { collectionDemandKg: Number(current.kg), collectionDemandSource: current.source, collectionDemandMethod: current.source === 'calibrated_estimate' ? current.method : undefined }
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/bins/${bin._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const result = await res.json().catch(() => ({}))
+        throw new Error(result.message || 'Could not save collection demand.')
+      }
+      await fetchBins()
+    } catch (error) {
+      alert(error.message || 'Could not save collection demand.')
     }
   }
 
@@ -250,6 +298,17 @@ const filteredBins = bins.filter(bin => {
               />
             </div>
           ))}
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>Collection demand (kg, optional)
+            <input type="number" min="0.01" step="0.01" name="collectionDemandKg" placeholder="Only enter a known demand" value={formData.collectionDemandKg} onChange={handleChange} style={{ display: 'block', width: '100%', marginTop: '8px', padding: '12px 14px', border: '1px solid var(--border-card)', borderRadius: '12px', boxSizing: 'border-box', color: 'var(--text-primary)', background: 'var(--bg-surface)' }} />
+          </label>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>Demand source
+            <select name="collectionDemandSource" value={formData.collectionDemandSource} onChange={handleChange} style={{ display: 'block', width: '100%', marginTop: '8px', padding: '12px 14px', border: '1px solid var(--border-card)', borderRadius: '12px', color: 'var(--text-primary)', background: 'var(--bg-surface)' }}>
+              <option value="">Unknown / not configured</option><option value="measured">Measured</option><option value="calibrated_estimate">Calibrated estimate</option>
+            </select>
+          </label>
+          {formData.collectionDemandSource === 'calibrated_estimate' && <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>Calibration method
+            <input name="collectionDemandMethod" required value={formData.collectionDemandMethod} onChange={handleChange} placeholder="Document the calibration basis" style={{ display: 'block', width: '100%', marginTop: '8px', padding: '12px 14px', border: '1px solid var(--border-card)', borderRadius: '12px', boxSizing: 'border-box', color: 'var(--text-primary)', background: 'var(--bg-surface)' }} />
+          </label>}
           <div
   style={{
     display: 'flex',
@@ -392,6 +451,22 @@ const filteredBins = bins.filter(bin => {
                     }} 
                   />
                 </div>
+              </div>
+              <div className="mb-4" style={{ display: 'grid', gap: '8px' }}>
+                <strong className="text-sm text-secondary">Route-planning demand</strong>
+                {(() => {
+                  const value = demandEdits[bin._id] || { kg: bin.collectionDemandKg ?? '', source: bin.collectionDemandSource || '', method: bin.collectionDemandMethod || '' }
+                  const update = (field, nextValue) => setDemandEdits((current) => ({ ...current, [bin._id]: { ...value, [field]: nextValue } }))
+                  return <>
+                    <input aria-label={`${bin.binId} collection demand kg`} type="number" min="0.01" step="0.01" placeholder="Unknown until configured" value={value.kg} onChange={(event) => update('kg', event.target.value)} />
+                    <select aria-label={`${bin.binId} demand source`} value={value.source} onChange={(event) => update('source', event.target.value)}>
+                      <option value="">Unknown</option><option value="measured">Measured</option><option value="calibrated_estimate">Calibrated estimate</option>
+                    </select>
+                    {value.source === 'calibrated_estimate' && <input aria-label={`${bin.binId} calibration method`} placeholder="Calibration method" value={value.method} onChange={(event) => update('method', event.target.value)} />}
+                    <button type="button" className="btn btn-secondary w-full" onClick={() => saveBinDemand(bin)}>Save demand details</button>
+                  </>
+                })()}
+                <small className="text-secondary">Fill percentage is not converted to kilograms.</small>
               </div>
             </div>
 
