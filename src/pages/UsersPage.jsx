@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react'
 import { Search, Filter, MoreVertical, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 export default function UsersPage() {
+  const { token } = useAuth()
   const [users, setUsers] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/users')
+    fetch('http://localhost:5000/api/users', { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => res.json())
       .then((data) => setUsers(data))
       .catch((err) => console.error(err))
-  }, [])
+  }, [token])
 
   const filteredUsers = users.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

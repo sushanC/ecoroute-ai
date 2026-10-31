@@ -1,441 +1,157 @@
-import { useState, useEffect } from "react"
-import { useAuth } from "../../context/AuthContext"
-import { Plus, Search, RefreshCw, CheckCircle, FileText } from "lucide-react"
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ArrowLeft, CheckCircle2, Clock3, FileText, LocateFixed, MapPin, Plus, RefreshCw, Truck, XCircle } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
+import { cancelRequest, createRequest, getRequest, getRequests } from '../../services/citizenApi'
+import './citizen.css'
+
+const wasteOptions = ['Organic', 'Recyclable', 'Plastic', 'Glass', 'Metal', 'E-Waste', 'Hazardous']
+const statusLabel = (status) => ({ 'in-progress': 'In progress', pending: 'Pending', completed: 'Completed', cancelled: 'Cancelled' }[status] || status)
+const dateText = (date) => date ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(date)) : '—'
+
+function Status({ value }) {
+  return <span className={`citizen-status status-${value}`}><span aria-hidden="true" />{statusLabel(value)}</span>
+}
+
+function AdminRequests({ token }) {
+  const [requests, setRequests] = useState([])
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const load = useCallback(async () => {
+    setLoading(true); setError('')
+    try { setRequests(await getRequests(token)) } catch (err) { setError(err.message) } finally { setLoading(false) }
+  }, [token])
+  useEffect(() => {
+    let current = true
+    getRequests(token).then((data) => { if (current) setRequests(data) }).catch((err) => { if (current) setError(err.message) }).finally(() => { if (current) setLoading(false) })
+    return () => { current = false }
+  }, [token])
+  const filtered = requests.filter((item) => `${item.name} ${item.location}`.toLowerCase().includes(search.toLowerCase()))
+  const complete = async (id) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/requests/${id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ status: 'completed' }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message || 'Could not update request')
+      await load()
+    } catch (err) { setError(err.message) }
+  }
+  return <section className="citizen-page">
+    <header className="citizen-page-heading"><div><p className="citizen-eyebrow">Operations</p><h1>Pickup requests</h1><p>Manage incoming collection requests.</p></div><button className="citizen-button secondary" onClick={load} disabled={loading}><RefreshCw size={17} /> Refresh</button></header>
+    <label className="citizen-search"><span className="sr-only">Search requests</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by name or location" /></label>
+    {error && <div className="citizen-alert error" role="alert">{error} <button onClick={load}>Retry</button></div>}
+    <div className="citizen-table-wrap"><table className="citizen-table"><thead><tr><th>Citizen</th><th>Location</th><th>Waste</th><th>Quantity</th><th>Status</th><th>Submitted</th><th>Action</th></tr></thead><tbody>
+      {loading ? <tr><td colSpan="7">Loading requests…</td></tr> : filtered.map((item) => <tr key={item._id}><td>{item.name}</td><td>{item.location}</td><td>{item.wasteTypes?.join(', ')}</td><td>{item.wasteAmount} kg</td><td><Status value={item.status} /></td><td>{dateText(item.createdAt)}</td><td><button className="citizen-button small secondary" disabled={item.status === 'completed'} onClick={() => complete(item._id)}>Mark complete</button></td></tr>)}
+      {!loading && !filtered.length && <tr><td colSpan="7">No requests found.</td></tr>}
+    </tbody></table></div>
+  </section>
+}
 
 export default function UserRequest() {
-  const { user } = useAuth()
+  const { user, token, refreshUser } = useAuth()
+  if (user?.role === 'admin') return <AdminRequests token={token} />
+  return <CitizenRequests user={user} token={token} refreshUser={refreshUser} />
+}
+
+function CitizenRequests({ user, token, refreshUser }) {
+  const { requestId } = useParams()
+  const navigate = useNavigate()
   const [requests, setRequests] = useState([])
-  const [search, setSearch] = useState("")
-  const [showModal, setShowModal] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [detail, setDetail] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const savingRef = useRef(false)
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [showForm, setShowForm] = useState(false)
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
+  const [form, setForm] = useState({ phone: '', location: '', lat: '', lng: '', wasteAmount: '', wasteTypes: [] })
+  const [locationMessage, setLocationMessage] = useState('')
 
-  const [form, setForm] = useState({
-  name: user?.name || "",
-  phone: "",
-  address: "",
-  wasteTypes: [],
-  priority: "High",
-  weight: "",
-})
-
-  const isAdmin = user?.role === "admin"
-
-  const fetchRequests = async () => {
-    setLoading(true)
+  const load = useCallback(async () => {
+    setLoading(true); setError('')
     try {
-      const res = await fetch("http://localhost:5000/api/requests")
-      if (res.ok) {
-        const data = await res.json()
-        setRequests(data)
-      }
-    } catch (error) {
-      console.error(error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
+      const data = await getRequests(token)
+      setRequests(data)
+      if (requestId) setDetail(await getRequest(token, requestId))
+      else setDetail(null)
+    } catch (err) { setError(err.message) } finally { setLoading(false) }
+  }, [token, requestId])
   useEffect(() => {
-    fetchRequests()
-  }, [])
+    let current = true
+    Promise.all([getRequests(token), requestId ? getRequest(token, requestId) : Promise.resolve(null)])
+      .then(([data, selected]) => { if (current) { setRequests(data); setDetail(selected) } })
+      .catch((err) => { if (current) setError(err.message) })
+      .finally(() => { if (current) setLoading(false) })
+    return () => { current = false }
+  }, [token, requestId])
 
-  const handleChange = (e) => {
-  setForm({ ...form, [e.target.id]: e.target.value })
-}
-
-// ADD THIS BLOCK HERE
-const handleWasteTypeToggle = (type) => {
-  setForm((prev) => ({
-    ...prev,
-    wasteTypes: prev.wasteTypes.includes(type)
-      ? prev.wasteTypes.filter((item) => item !== type)
-      : [...prev.wasteTypes, type]
-  }))
-}
-
-const handleSubmit = async () => {
-  try {
-    setLoading(true)
-
-    const res = await fetch(
-      "http://localhost:5000/api/requests",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: form.name,
-          phone: form.phone,
-          location: form.address,
-          wasteAmount: Number(form.weight),
-          wasteTypes: form.wasteTypes,
-          priority: form.priority,
-          status: "pending",
-        }),
-      }
-    )
-
-    const data = await res.json()
-
-    console.log("STATUS:", res.status)
-    console.log("RESPONSE:", data)
-
-    if (!res.ok) {
-      alert(data.message || "Request failed")
-      return
-    }
-
-    setShowModal(false)
-    fetchRequests()
-  } catch (err) {
-    console.error(err)
-  } finally {
-    setLoading(false)
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) { setLocationMessage('This browser does not support location access. Enter coordinates below.'); return }
+    setLocationMessage('Waiting for location permission…')
+    navigator.geolocation.getCurrentPosition(({ coords }) => {
+      setForm((previous) => ({ ...previous, lat: coords.latitude.toFixed(6), lng: coords.longitude.toFixed(6) }))
+      setLocationMessage('Coordinates added. Confirm that the pickup address matches this location.')
+    }, (err) => setLocationMessage(err.code === 1 ? 'Location permission was not granted. You can enter coordinates manually.' : 'Could not get your location. Enter coordinates manually.'), { enableHighAccuracy: true, timeout: 12000 })
   }
-}
-  const handleComplete = async (id) => {
+
+  const submit = async (event) => {
+    event.preventDefault(); if (savingRef.current) return
+    setError(''); setNotice('')
+    const lat = Number(form.lat), lng = Number(form.lng), amount = Number(form.wasteAmount)
+    if (!form.location.trim() || !Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180 || !Number.isFinite(amount) || amount <= 0 || !form.wasteTypes.length) {
+      setError('Enter a pickup address, valid latitude and longitude, a positive quantity, and at least one waste type.'); return
+    }
+    savingRef.current = true; setSaving(true)
     try {
-      const res = await fetch(`http://localhost:5000/api/requests/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "completed" })
-      })
-      if (res.ok) fetchRequests()
-    } catch (error) {
-      console.error(error)
-    }
+      await createRequest(token, { phone: form.phone, location: form.location.trim(), lat, lng, wasteAmount: amount, wasteTypes: form.wasteTypes })
+      setNotice('Your pickup request was submitted successfully.')
+      setShowForm(false)
+      setForm({ phone: '', location: '', lat: '', lng: '', wasteAmount: '', wasteTypes: [] })
+      await load(); await refreshUser?.()
+    } catch (err) { setError(err.message) } finally { savingRef.current = false; setSaving(false) }
   }
 
-  let filtered = requests
-  if (!isAdmin) {
-    filtered = filtered.filter(req => req.name === user?.name || req.name === "Demo User") // Show user's own requests
+  const cancel = async (item) => {
+    if (savingRef.current) return
+    savingRef.current = true; setSaving(true); setError(''); setNotice('')
+    try { await cancelRequest(token, item._id); setNotice('Request cancelled.'); await load() }
+    catch (err) { setError(err.message) } finally { savingRef.current = false; setSaving(false) }
   }
-  
-  if (search) {
-    filtered = filtered.filter(req => (req.name || "").toLowerCase().includes(search.toLowerCase()))
-  }
-  const wasteOptions = [
-  "Organic",
-  "Recyclable",
-  "Plastic",
-  "Glass",
-  "Metal",
-  "E-Waste",
-  "Hazardous"
-]
 
-  return (
-    <div>
-      <div className="page-header">
-        <div>
-          <h1>{isAdmin ? "All Requests" : "My Requests"}</h1>
-          <p>{isAdmin ? "Manage and monitor all pickup requests" : "Track your waste pickup requests"}</p>
-        </div>
-        <div className="flex gap-4">
-          <button className="btn btn-secondary" onClick={fetchRequests} disabled={loading}>
-            <RefreshCw size={16} /> Refresh
-          </button>
-          {!isAdmin && (
-            <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-              <Plus size={16} /> New Request
-            </button>
-          )}
-        </div>
-      </div>
+  const filtered = requests.filter((item) => (statusFilter === 'all' || item.status === statusFilter) &&
+    (!fromDate || new Date(item.createdAt) >= new Date(`${fromDate}T00:00:00`)) &&
+    (!toDate || new Date(item.createdAt) <= new Date(`${toDate}T23:59:59`)))
 
-      {isAdmin && (
-        <div className="mb-6 flex gap-4" style={{ width: 300 }}>
-          <div className="input-wrapper w-full">
-            <input
-              className="input"
-              placeholder="Search by name..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-        </div>
-      )}
-
-      <div className="card">
-        <div className="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Phone</th>
-                <th>Location</th>
-                <th>Waste Type</th>
-                <th>Amount</th>
-                <th>Priority</th>
-                <th>Status</th>
-                {isAdmin && <th>Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((req) => (
-                <tr key={req._id}>
-                  <td className="font-semibold">{req.name}</td>
-                  <td>{req.phone || "N/A"}</td>
-                  <td>{req.location}</td>
-                  <td>
-  <div
-    style={{
-      display: "flex",
-      flexWrap: "wrap",
-      gap: "6px"
-    }}
-  >
-    {(req.wasteTypes || []).map((type) => (
-      <span
-        key={type}
-        className="badge badge-success"
-      >
-        {type}
-      </span>
-    ))}
-  </div>
-</td>
-                  <td>{req.wasteAmount} kg</td>
-                  <td>
-                    <span className={`badge ${req.priority === "High" ? "badge-danger" : req.priority === "Medium" ? "badge-warning" : "badge-neutral"}`}>
-                      {req.priority}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`badge ${req.status === "completed" ? "badge-success" : req.status === "in-progress" ? "badge-info" : "badge-warning"}`}>
-                      {req.status}
-                    </span>
-                  </td>
-                  {isAdmin && (
-                    <td>
-                      <button 
-                        className="btn btn-secondary btn-sm" 
-                        onClick={() => handleComplete(req._id)}
-                        disabled={req.status === "completed"}
-                      >
-                        <CheckCircle size={14} /> Complete
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-              {filtered.length === 0 && !loading && (
-                <tr>
-                  <td colSpan={isAdmin ? 8 : 7}>
-                    <div className="empty-state" style={{ border: 'none', padding: '48px 0' }}>
-                      <div className="empty-state-icon">
-                        <FileText size={24} />
-                      </div>
-                      <h3>No requests found</h3>
-                      <p>There are no requests matching your criteria.</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-{showModal && (
-  <div
-    className="modal-overlay"
-    style={{
-      position: 'fixed',
-      inset: 0,
-      background: 'rgba(17, 24, 39, 0.6)',
-      backdropFilter: 'blur(6px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px',
-      zIndex: 9999,
-    }}
-  >
-    <div
-      style={{
-        width: '100%',
-        maxWidth: '760px',
-        background: 'var(--bg-surface)',
-        borderRadius: '24px',
-        padding: '28px',
-        boxShadow: 'var(--shadow-elevated)',
-        border: '1px solid var(--border-card)',
-      }}
-    >
-      {/* Header */}
-      <div style={{ marginBottom: '22px' }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-          New Pickup Request
-        </h2>
-        <p style={{ color: 'var(--text-secondary)', marginTop: '6px' }}>
-          Submit your waste pickup request in MG Road zone.
-        </p>
-      </div>
-
-      {/* Grid Form */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))',
-          gap: '16px',
-        }}
-      >
-        <div>
-          <label className="input-label">Full Name</label>
-          <input
-            className="input"
-            id="name"
-            value={form.name}
-            disabled
-            style={{ background: 'var(--bg-base)', color: 'var(--text-secondary)' }}
-          />
-        </div>
-
-        <div>
-          <label className="input-label">Phone Number</label>
-          <input
-            className="input"
-            id="phone"
-            value={form.phone}
-            onChange={handleChange}
-            placeholder="+91 98765 43210"
-          />
-        </div>
-
-        <div style={{ gridColumn: '1 / -1' }}>
-          <label className="input-label">Pickup Address</label>
-          <input
-            className="input"
-            id="address"
-            value={form.address}
-            onChange={handleChange}
-            placeholder="Enter full address"
-          />
-        </div>
-
-        <div style={{ gridColumn: "1 / -1" }}>
-  <label className="input-label">
-    Waste Categories
-  </label>
-
-  <div
-    style={{
-      display: "flex",
-      flexWrap: "wrap",
-      gap: "10px",
-      marginTop: "10px"
-    }}
-  >
-    {wasteOptions.map((type) => (
-      <button
-        key={type}
-        type="button"
-        onClick={() => handleWasteTypeToggle(type)}
-        style={{
-          padding: "10px 16px",
-          borderRadius: "999px",
-          border: form.wasteTypes.includes(type)
-            ? "1px solid var(--primary-green)"
-            : "1px solid var(--border-card)",
-          background: form.wasteTypes.includes(type)
-            ? "var(--status-success-bg)"
-            : "var(--bg-surface)",
-          color: form.wasteTypes.includes(type)
-            ? "var(--primary-green-dark)"
-            : "var(--text-secondary)",
-          fontWeight: 600,
-          cursor: "pointer",
-          transition: "all .2s"
-        }}
-      >
-        {type}
-      </button>
-    ))}
-  </div>
-
-  {form.wasteTypes.length > 0 && (
-    <div
-      style={{
-        marginTop: "12px",
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "8px"
-      }}
-    >
-      {form.wasteTypes.map((type) => (
-        <span
-          key={type}
-          className="badge badge-success"
-        >
-          {type}
-        </span>
-      ))}
+  if (detail) return <section className="citizen-page">
+    <button className="citizen-back" onClick={() => navigate('/my-requests')}><ArrowLeft size={17} /> Back to my requests</button>
+    <header className="citizen-page-heading"><div><p className="citizen-eyebrow">Request details</p><h1>Pickup request</h1><p className="request-id">ID: {detail._id}</p></div><Status value={detail.status} /></header>
+    <div className="citizen-detail-grid">
+      <article className="citizen-card"><h2>Pickup information</h2><dl><dt>Submitted</dt><dd>{dateText(detail.createdAt)}</dd><dt>Pickup address</dt><dd>{detail.location || '—'}</dd><dt>Waste type</dt><dd>{detail.wasteTypes?.join(', ') || '—'}</dd><dt>Quantity</dt><dd>{detail.wasteAmount ?? '—'} kg</dd><dt>Contact phone</dt><dd>{detail.phone || 'Not provided'}</dd></dl></article>
+      <article className="citizen-card"><h2>Collection status</h2><div className="tracking-note"><Truck size={22} /><div><strong>{statusLabel(detail.status)}</strong><p>{detail.status === 'pending' ? 'Your request is waiting for collection scheduling.' : detail.status === 'in-progress' ? 'Collection is in progress.' : detail.status === 'completed' ? 'This request is marked completed by the service team.' : 'This request was cancelled.'}</p></div></div><dl><dt>Assigned driver / truck</dt><dd>{detail.driverName || detail.truckId || 'No assignment provided'}</dd><dt>Estimated arrival</dt><dd>{detail.estimatedArrival ? dateText(detail.estimatedArrival) : 'No arrival estimate provided'}</dd><dt>Completion information</dt><dd>{detail.completedAt ? dateText(detail.completedAt) : 'No completion details provided'}</dd></dl>
+        {detail.status === 'pending' && <button className="citizen-button danger" disabled={saving} onClick={() => cancel(detail)}><XCircle size={17} /> Cancel request</button>}
+      </article>
     </div>
-  )}
-</div>
+    {error && <div className="citizen-alert error" role="alert">{error}</div>}{notice && <div className="citizen-alert success" role="status">{notice}</div>}
+  </section>
 
-        <div>
-          <label className="input-label">Priority</label>
-          <select
-            className="input"
-            id="priority"
-            value={form.priority}
-            onChange={handleChange}
-          >
-            <option>High</option>
-            <option>Medium</option>
-            <option>Low</option>
-          </select>
-        </div>
+  return <section className="citizen-page">
+    <header className="citizen-page-heading"><div><p className="citizen-eyebrow">Collection history</p><h1>My pickup requests</h1><p>Track your requests and review previous collections.</p></div><button className="citizen-button primary" onClick={() => setShowForm(true)}><Plus size={18} /> Request pickup</button></header>
+    {error && <div className="citizen-alert error" role="alert">{error}<button onClick={load}>Retry</button></div>}{notice && <div className="citizen-alert success" role="status"><CheckCircle2 size={17} />{notice}</div>}
+    <div className="citizen-filterbar"><label>Status<select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="all">All statuses</option><option value="pending">Pending</option><option value="in-progress">In progress</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label><label>From<input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} /></label><label>To<input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} /></label><button className="citizen-button small secondary" onClick={load} disabled={loading}><RefreshCw size={15} /> Refresh</button></div>
+    {loading ? <div className="citizen-card citizen-skeleton" aria-label="Loading requests"><div /><div /><div /></div> : filtered.length ? <div className="citizen-request-list">{filtered.map((item) => <article className="citizen-request-row" key={item._id}><div className="request-icon"><FileText size={20} /></div><div className="request-info"><strong>{item.wasteTypes?.join(', ') || 'Pickup request'}</strong><span><MapPin size={14} />{item.location}</span><small>{dateText(item.createdAt)} · {item.wasteAmount} kg</small></div><Status value={item.status} /><Link className="citizen-button small secondary" to={`/my-requests/${item._id}`}>View details</Link></article>)}</div> : <div className="citizen-card citizen-empty"><div className="empty-icon"><Clock3 size={24} /></div><h2>{requests.length ? 'No matching requests' : 'No pickup requests yet'}</h2><p>{requests.length ? 'Try changing your status or date filters.' : 'When you submit a pickup request, its status and details will appear here.'}</p>{requests.length ? <button className="citizen-button secondary" onClick={() => { setStatusFilter('all'); setFromDate(''); setToDate('') }}>Clear filters</button> : <button className="citizen-button primary" onClick={() => setShowForm(true)}><Plus size={18} /> Request your first pickup</button>}</div>}
 
-        <div>
-          <label className="input-label">Estimated Weight</label>
-          <input
-            className="input"
-            id="weight"
-            type="number"
-            value={form.weight}
-            onChange={handleChange}
-            placeholder="0 kg"
-          />
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div
-        style={{
-          marginTop: '24px',
-          display: 'flex',
-          justifyContent: 'flex-end',
-          gap: '12px',
-          flexWrap: 'wrap',
-        }}
-      >
-        <button
-          className="btn btn-secondary"
-          onClick={() => setShowModal(false)}
-        >
-          Cancel
-        </button>
-
-        <button
-          className="btn btn-primary"
-          onClick={handleSubmit}
-          disabled={
-  loading ||
-  !form.address ||
-  !form.weight ||
-  form.wasteTypes.length === 0
-}
-        >
-          {loading ? 'Submitting...' : 'Submit Request'}
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-    </div>
-  )
+    {showForm && <div className="citizen-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) setShowForm(false) }}><form className="citizen-modal" onSubmit={submit} aria-labelledby="request-form-title"><div className="modal-heading"><div><p className="citizen-eyebrow">New collection</p><h2 id="request-form-title">Request a pickup</h2></div><button type="button" aria-label="Close" className="citizen-icon-button" onClick={() => setShowForm(false)}><XCircle size={20} /></button></div>
+      {error && <div className="citizen-alert error" role="alert">{error}</div>}
+      <div className="citizen-form-grid"><label>Name<input value={user?.name || ''} readOnly /></label><label>Phone (optional)<input type="tel" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} autoComplete="tel" /></label><label className="span-all">Pickup address<input required value={form.location} onChange={(event) => setForm({ ...form, location: event.target.value })} placeholder="Street, building, area" autoComplete="street-address" /></label>
+        <div className="span-all coordinate-box"><div><strong>Pickup coordinates</strong><p>Required so the collection team can locate your pickup point.</p></div><button type="button" className="citizen-button small secondary" onClick={useCurrentLocation}><LocateFixed size={16} /> Use my location</button><label>Latitude<input type="number" min="-90" max="90" step="any" required value={form.lat} onChange={(event) => setForm({ ...form, lat: event.target.value })} /></label><label>Longitude<input type="number" min="-180" max="180" step="any" required value={form.lng} onChange={(event) => setForm({ ...form, lng: event.target.value })} /></label><p className="span-all location-help" role="status">{locationMessage}</p></div>
+        <fieldset className="span-all"><legend>Waste type <span aria-hidden="true">*</span></legend><div className="waste-options">{wasteOptions.map((type) => <label key={type} className={form.wasteTypes.includes(type) ? 'selected' : ''}><input type="checkbox" checked={form.wasteTypes.includes(type)} onChange={() => setForm((previous) => ({ ...previous, wasteTypes: previous.wasteTypes.includes(type) ? previous.wasteTypes.filter((value) => value !== type) : [...previous.wasteTypes, type] }))} />{type}</label>)}</div></fieldset>
+        <label className="span-all">Estimated quantity (kg)<input type="number" min="0.1" step="0.1" required value={form.wasteAmount} onChange={(event) => setForm({ ...form, wasteAmount: event.target.value })} /></label>
+      </div><footer className="citizen-modal-actions"><button type="button" className="citizen-button secondary" disabled={saving} onClick={() => setShowForm(false)}>Cancel</button><button type="submit" className="citizen-button primary" disabled={saving}>{saving ? 'Submitting…' : 'Submit pickup request'}</button></footer>
+    </form></div>}
+  </section>
 }

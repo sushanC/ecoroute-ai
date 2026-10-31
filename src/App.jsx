@@ -78,6 +78,15 @@ function App() {
     </ProtectedRoute>
   }
 />
+
+<Route
+  path="/my-requests/:requestId"
+  element={
+    <ProtectedRoute allowedRoles={['user']}>
+      <UserRequest />
+    </ProtectedRoute>
+  }
+/>
             
             
             {/* Shared Routes */}

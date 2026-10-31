@@ -327,6 +327,7 @@ tbody tr:last-child td { border-bottom: none; }
 @media (max-width: 768px) {
   .grid-cols-3, .grid-cols-4 { grid-template-columns: 1fr; }
   .page-container { padding: 24px 16px; }
+  .main-content .page-container { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
   .main-content { margin-left: 0; }
   .main-content.sidebar-collapsed { margin-left: 0; }
 }

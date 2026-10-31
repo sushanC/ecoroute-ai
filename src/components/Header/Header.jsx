@@ -34,7 +34,7 @@ export default function Header() {
   const currentPage =
     routeLabels[location.pathname] || 'EcoRoute AI'
 
-  const { user } = useContext(AuthContext)
+  const { user, token } = useContext(AuthContext)
 
   const [searchTerm, setSearchTerm] = useState('')
   const [showResults, setShowResults] = useState(false)
@@ -82,13 +82,18 @@ export default function Header() {
 
   useEffect(() => {
     const fetchSearchData = async () => {
+      if (user?.role !== 'admin' || !token) {
+        setUsers([]); setTrucks([]); setBins([]); setRequests([])
+        return
+      }
       try {
+        const headers = { Authorization: `Bearer ${token}` }
         const [usersRes, trucksRes, binsRes, requestsRes] =
           await Promise.all([
-            fetch('http://localhost:5000/api/users'),
-            fetch('http://localhost:5000/api/trucks'),
-            fetch('http://localhost:5000/api/bins'),
-            fetch('http://localhost:5000/api/requests')
+            fetch('http://localhost:5000/api/users', { headers }),
+            fetch('http://localhost:5000/api/trucks', { headers }),
+            fetch('http://localhost:5000/api/bins', { headers }),
+            fetch('http://localhost:5000/api/requests', { headers })
           ])
 
         if (usersRes.ok) setUsers(await usersRes.json())
@@ -101,7 +106,7 @@ export default function Header() {
     }
 
     fetchSearchData()
-  }, [])
+  }, [user?.role, token])
 
   /* Close search dropdown on outside click */
   useEffect(() => {

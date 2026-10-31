@@ -14,13 +14,12 @@ import {
 } from 'lucide-react'
 
 export default function Rewards() {
-  const { user, refreshUser } = useAuth()
+  const { user, token, refreshUser } = useAuth()
   const isAdmin = user?.role === 'admin'
 
   const [members, setMembers] = useState([])
   const [leaders, setLeaders] = useState([])
   const [history, setHistory] = useState([])
-  const [search, setSearch] = useState('')
   const [confetti, setConfetti] = useState(false)
   const [copied, setCopied] = useState(false)
   const [referralInput, setReferralInput] = useState('')
@@ -38,17 +37,13 @@ export default function Rewards() {
     { key: 'swiggy', title: 'Swiggy Discount', cost: 350, tag: 'Trending' },
   ]
 
-  /* ===================================================== */
-  useEffect(() => {
-    loadData()
-  }, [user])
-
   const loadData = async () => {
     if (!user) return
 
     try {
       const leaderRes = await fetch(
         'http://localhost:5000/api/rewards/leaderboard'
+        , { headers: { Authorization: `Bearer ${token}` } }
       )
       const leaderData = await leaderRes.json()
       setLeaders(leaderData)
@@ -56,12 +51,14 @@ export default function Rewards() {
       if (isAdmin) {
         const userRes = await fetch(
           'http://localhost:5000/api/users'
+          , { headers: { Authorization: `Bearer ${token}` } }
         )
         const users = await userRes.json()
         setMembers(users)
       } else {
         const hisRes = await fetch(
           `http://localhost:5000/api/rewards/history/${user._id}`
+          , { headers: { Authorization: `Bearer ${token}` } }
         )
         const hisData = await hisRes.json()
         setHistory(hisData)
@@ -70,6 +67,24 @@ export default function Rewards() {
       console.error(error)
     }
   }
+
+  useEffect(() => {
+    if (!user || !token) return
+    let current = true
+    const headers = { Authorization: `Bearer ${token}` }
+    Promise.all([
+      fetch('http://localhost:5000/api/rewards/leaderboard', { headers }).then((response) => response.json()),
+      isAdmin
+        ? fetch('http://localhost:5000/api/users', { headers }).then((response) => response.json())
+        : fetch(`http://localhost:5000/api/rewards/history/${user._id}`, { headers }).then((response) => response.json()),
+    ]).then(([leaderData, data]) => {
+      if (!current) return
+      setLeaders(leaderData)
+      if (isAdmin) setMembers(data)
+      else setHistory(data)
+    }).catch((error) => console.error(error))
+    return () => { current = false }
+  }, [user, token, isAdmin])
 
   /* ===================================================== */
   const claimReward = async (rewardKey) => {
@@ -80,9 +95,9 @@ export default function Rewards() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            userId: user._id,
             redeemType: rewardKey,
           }),
         }
@@ -100,7 +115,7 @@ export default function Rewards() {
 
       await refreshUser()
       loadData()
-    } catch (error) {
+    } catch {
       alert('Something went wrong')
     }
   }
@@ -116,9 +131,9 @@ export default function Rewards() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            userId: user._id,
             referralCode: referralInput,
           }),
         }
@@ -133,7 +148,7 @@ export default function Rewards() {
         await refreshUser()
         loadData()
       }
-    } catch (error) {
+    } catch {
       alert('Failed to apply referral')
     }
   }

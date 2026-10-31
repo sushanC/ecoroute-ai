@@ -1,435 +1,64 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { ArrowRight, Award, CheckCircle2, Clock3, Leaf, Plus, Truck } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import {
-  ClipboardList,
-  Award,
-  CheckCircle,
-  Leaf,
-  ArrowRight,
-  Clock3,
-  Trophy,
-  Truck,
-  Sparkles,
-} from 'lucide-react'
+import { getCurrentUser, getRequests, getRewardHistory } from '../../services/citizenApi'
+import '../UserRequest/citizen.css'
+import './UserDashboard.css'
+
+const dateText = (date) => date ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(date)) : '—'
+const statusName = (status) => ({ 'in-progress': 'In progress', pending: 'Pending', completed: 'Completed', cancelled: 'Cancelled' }[status] || status)
 
 export default function UserDashboard() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const [requests, setRequests] = useState([])
+  const [rewards, setRewards] = useState([])
+  const [rewardBalance, setRewardBalance] = useState(user?.rewardPoints ?? 0)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
+  const load = useCallback(async () => {
+    setLoading(true); setError('')
+    try {
+      const [requestData, rewardData, currentUser] = await Promise.all([getRequests(token), getRewardHistory(token, user?._id), getCurrentUser(token)])
+      setRequests(requestData); setRewards(rewardData); setRewardBalance(currentUser.rewardPoints ?? 0)
+    } catch (err) { setError(err.message) } finally { setLoading(false) }
+  }, [token, user])
   useEffect(() => {
-    fetch('http://localhost:5000/api/requests')
-      .then((res) => res.json())
-      .then((data) => {
-        const myRequests = data.filter(
-          (r) => r.name === user?.name
-        )
-        setRequests(myRequests)
-      })
-      .catch(console.error)
-  }, [user])
+    let current = true
+    Promise.all([getRequests(token), getRewardHistory(token, user?._id), getCurrentUser(token)])
+      .then(([requestData, rewardData, currentUser]) => { if (current) { setRequests(requestData); setRewards(rewardData); setRewardBalance(currentUser.rewardPoints ?? 0) } })
+      .catch((err) => { if (current) setError(err.message) })
+      .finally(() => { if (current) setLoading(false) })
+    return () => { current = false }
+  }, [token, user])
 
-  const total = requests.length
-  const completed = requests.filter(
-    (r) => r.status === 'completed'
-  ).length
-  const pending = requests.filter(
-    (r) => r.status !== 'completed'
-  ).length
+  const pending = requests.filter((item) => item.status === 'pending').length
+  const inProgress = requests.filter((item) => item.status === 'in-progress').length
+  const completed = requests.filter((item) => item.status === 'completed').length
+  const recent = requests.slice(0, 4)
 
-  const progress =
-    total > 0
-      ? Math.round((completed / total) * 100)
-      : 0
-
-  return (
-    <div>
-      {/* Header */}
-      <div className="page-header">
-        <div>
-          <h1
-            style={{
-              fontSize: '2rem',
-              fontWeight: 800,
-              marginBottom: '6px',
-            }}
-          >
-            Welcome back, {user?.name}
-          </h1>
-          <p style={{ color: 'var(--text-secondary)' }}>
-            Manage pickups, rewards & your eco impact.
-          </p>
-        </div>
-      </div>
-
-      {/* Top Hero */}
-      <div
-        style={{
-          background:
-            'linear-gradient(135deg, var(--primary-green), var(--primary-green-light))',
-          borderRadius: '28px',
-          padding: '28px',
-          color: 'white',
-          marginBottom: '24px',
-          boxShadow:
-            'var(--shadow-elevated)',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent:
-              'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '16px',
-          }}
-        >
-          <div>
-            <p style={{ opacity: 0.9 }}>
-              Total Reward Points
-            </p>
-            <h2
-              style={{
-                fontSize: '3rem',
-                fontWeight: 800,
-              }}
-            >
-              {user?.rewardPoints || 0}
-            </h2>
-          </div>
-
-          <div
-            style={{
-              background:
-                'rgba(255,255,255,0.15)',
-              padding: '16px 18px',
-              borderRadius: '18px',
-            }}
-          >
-            <p style={{ opacity: 0.9 }}>
-              Completion Rate
-            </p>
-            <h3
-              style={{
-                fontSize: '1.6rem',
-                fontWeight: 800,
-              }}
-            >
-              {progress}%
-            </h3>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns:
-            'repeat(auto-fit,minmax(220px,1fr))',
-          gap: '18px',
-          marginBottom: '24px',
-        }}
-      >
-        {[
-          {
-            title: 'Total Requests',
-            value: total,
-            icon: <ClipboardList size={20} />,
-          },
-          {
-            title: 'Completed',
-            value: completed,
-            icon: <CheckCircle size={20} />,
-          },
-          {
-            title: 'Pending',
-            value: pending,
-            icon: <Clock3 size={20} />,
-          },
-          {
-            title: 'Eco Impact',
-            value: `${total * 5} kg`,
-            icon: <Leaf size={20} />,
-          },
-        ].map((card, i) => (
-          <div
-            key={i}
-            style={{
-              background: 'var(--bg-card)',
-              borderRadius: '22px',
-              padding: '22px',
-              border: '1px solid var(--border-card)',
-              boxShadow:
-                'var(--shadow-card)',
-            }}
-          >
-            <div
-              style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '14px',
-                background: 'var(--status-success-bg)',
-                color: 'var(--status-success)',
-                display: 'grid',
-                placeItems: 'center',
-                marginBottom: '14px',
-              }}
-            >
-              {card.icon}
-            </div>
-
-            <p style={{ color: 'var(--text-secondary)' }}>
-              {card.title}
-            </p>
-
-            <h3
-              style={{
-                fontSize: '1.6rem',
-                fontWeight: 800,
-              }}
-            >
-              {card.value}
-            </h3>
-          </div>
-        ))}
-      </div>
-
-      {/* Middle Grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns:
-            '1.2fr 1fr',
-          gap: '20px',
-          marginBottom: '24px',
-        }}
-      >
-        {/* Progress Tracker */}
-        <div
-          style={{
-            background: 'var(--bg-card)',
-            borderRadius: '24px',
-            padding: '24px',
-            border: '1px solid var(--border-card)',
-          }}
-        >
-          <h3
-            style={{
-              fontWeight: 800,
-              marginBottom: '16px',
-            }}
-          >
-            Pickup Progress
-          </h3>
-
-          <div
-            style={{
-              width: '100%',
-              height: '14px',
-              borderRadius: '999px',
-              background: 'var(--bg-base)',
-              overflow: 'hidden',
-              marginBottom: '12px',
-            }}
-          >
-            <div
-              style={{
-                width: `${progress}%`,
-                height: '100%',
-                background:
-                  'linear-gradient(90deg, var(--primary-green), var(--primary-green-light))',
-              }}
-            />
-          </div>
-
-          <p style={{ color: 'var(--text-secondary)' }}>
-            {completed} completed of {total} requests
-          </p>
-
-          <div
-            style={{
-              marginTop: '18px',
-              padding: '14px',
-              background: 'var(--bg-base)',
-              borderRadius: '16px',
-            }}
-          >
-            🚛 Next pickup estimated in 25 mins
-          </div>
-        </div>
-
-        {/* Achievements */}
-        <div
-          style={{
-            background: 'var(--bg-card)',
-            borderRadius: '24px',
-            padding: '24px',
-            border: '1px solid var(--border-card)',
-          }}
-        >
-          <h3
-            style={{
-              fontWeight: 800,
-              marginBottom: '16px',
-            }}
-          >
-            Achievements
-          </h3>
-
-          <div
-            style={{
-              display: 'grid',
-              gap: '12px',
-            }}
-          >
-            {[
-              '🌱 Eco Starter',
-              '♻️ Green Citizen',
-              '🏆 Top Recycler',
-            ].map((badge, i) => (
-              <div
-                key={i}
-                style={{
-                  padding: '12px',
-                  borderRadius: '14px',
-                  background: 'var(--bg-base)',
-                  fontWeight: 700,
-                }}
-              >
-                {badge}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns:
-            '1fr 1fr',
-          gap: '20px',
-        }}
-      >
-        {/* Quick Actions */}
-        <div
-          style={{
-            background: 'var(--bg-card)',
-            borderRadius: '24px',
-            padding: '24px',
-            border: '1px solid var(--border-card)',
-          }}
-        >
-          <h3
-            style={{
-              fontWeight: 800,
-              marginBottom: '16px',
-            }}
-          >
-            Quick Actions
-          </h3>
-
-          <div
-            style={{
-              display: 'grid',
-              gap: '12px',
-            }}
-          >
-            {[
-              {
-                title: 'My Requests',
-                path: '/my-requests',
-              },
-              {
-                title: 'Rewards',
-                path: '/rewards',
-              },
-              {
-                title: 'Profile',
-                path: '/profile',
-              },
-            ].map((item, i) => (
-              <a
-                key={i}
-                href={item.path}
-                style={{
-                  padding: '14px',
-                  borderRadius: '16px',
-                  background: 'var(--bg-base)',
-                  textDecoration: 'none',
-                  color: 'var(--text-primary)',
-                  fontWeight: 700,
-                  display: 'flex',
-                  justifyContent:
-                    'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                {item.title}
-                <ArrowRight size={18} />
-              </a>
-            ))}
-          </div>
-        </div>
-
-        {/* Insights */}
-        <div
-          style={{
-            background: 'var(--bg-card)',
-            borderRadius: '24px',
-            padding: '24px',
-            border: '1px solid var(--border-card)',
-          }}
-        >
-          <h3
-            style={{
-              fontWeight: 800,
-              marginBottom: '16px',
-            }}
-          >
-            Smart Insights
-          </h3>
-
-          <div
-            style={{
-              display: 'grid',
-              gap: '14px',
-            }}
-          >
-            {[
-              {
-                icon: <Sparkles size={16} />,
-                text: 'Best pickup time: 8AM - 10AM',
-              },
-              {
-                icon: <Truck size={16} />,
-                text: 'Average response time: 32 mins',
-              },
-              {
-                icon: <Trophy size={16} />,
-                text: 'You rank in top 15% users',
-              },
-            ].map((tip, i) => (
-              <div
-                key={i}
-                style={{
-                  display: 'flex',
-                  gap: '10px',
-                  padding: '12px',
-                  borderRadius: '14px',
-                  background: 'var(--bg-base)',
-                  alignItems: 'center',
-                }}
-              >
-                {tip.icon}
-                <span>{tip.text}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+  return <section className="citizen-page dashboard-citizen">
+    <header className="citizen-page-heading"><div><p className="citizen-eyebrow">Citizen dashboard</p><h1>Welcome{user?.name ? `, ${user.name.split(' ')[0]}` : ''}</h1><p>Arrange a pickup and follow your collection requests.</p></div><Link className="citizen-button primary" to="/my-requests"><Plus size={18} /> Request pickup</Link></header>
+    {error && <div className="citizen-alert error" role="alert">{error}<button onClick={load}>Retry</button></div>}
+    <section className="citizen-summary-grid" aria-label="Pickup request summary">
+      {[
+        { title: 'Pending', value: pending, icon: <Clock3 size={20} />, accent: 'amber' },
+        { title: 'In progress', value: inProgress, icon: <Truck size={20} />, accent: 'blue' },
+        { title: 'Completed', value: completed, icon: <CheckCircle2 size={20} />, accent: 'green' },
+      ].map((card) => <article key={card.title} className="citizen-summary-card"><span className={`summary-icon ${card.accent}`}>{card.icon}</span><div><p>{card.title}</p><strong>{loading ? '—' : card.value}</strong></div></article>)}
+    </section>
+    <section className="citizen-reward-banner"><div className="reward-symbol"><Award size={24} /></div><div><p>Your rewards balance</p><strong>{loading ? '—' : rewardBalance} <span>points</span></strong><small>Earned and redeemed rewards are reflected in your account balance.</small></div><Link to="/rewards">View rewards <ArrowRight size={16} /></Link></section>
+    <div className="citizen-dashboard-columns">
+      <section className="citizen-card recent-card"><div className="citizen-section-heading"><div><h2>Recent pickup requests</h2><p>Latest updates from your request history.</p></div><Link to="/my-requests">View all <ArrowRight size={15} /></Link></div>
+        {loading ? <div className="citizen-skeleton" aria-label="Loading requests"><div /><div /><div /></div> : recent.length ? <div className="dashboard-request-list">{recent.map((item) => <Link key={item._id} className="dashboard-request" to={`/my-requests/${item._id}`}><span className="request-icon"><Leaf size={18} /></span><span className="dashboard-request-text"><strong>{item.wasteTypes?.join(', ') || 'Pickup request'}</strong><small>{item.location} · {dateText(item.createdAt)}</small></span><span className={`citizen-status status-${item.status}`}><span aria-hidden="true" />{statusName(item.status)}</span></Link>)}</div> : <div className="citizen-empty compact"><div className="empty-icon"><Clock3 size={22} /></div><h2>No pickup requests yet</h2><p>Once you submit a request, its latest status will appear here.</p><Link className="citizen-button primary" to="/my-requests"><Plus size={16} /> Request a pickup</Link></div>}
+      </section>
+      <section className="citizen-card reward-history-card"><div className="citizen-section-heading"><div><h2>Rewards activity</h2><p>Recent points added or redeemed.</p></div><Award size={20} className="history-award" /></div>
+        {loading ? <div className="citizen-skeleton" aria-label="Loading reward activity"><div /><div /></div> : rewards.length ? <ul className="reward-history-list">{rewards.slice(0, 5).map((reward) => <li key={reward._id}><span><strong>{reward.benefitType}</strong><small>{dateText(reward.createdAt)}</small></span><b className={reward.points < 0 ? 'deducted' : ''}>{reward.points > 0 ? '+' : ''}{reward.points}</b></li>)}</ul> : <div className="reward-empty"><Award size={22} /><p>No reward activity recorded yet.</p></div>}
+        <Link className="rewards-link" to="/rewards">Explore rewards <ArrowRight size={15} /></Link>
+      </section>
     </div>
-  )
+    {!loading && !requests.length && <div className="dashboard-help-note"><Leaf size={17} /> Your request list and collection counts update when the backend records new activity. No estimated arrival is shown until the service provides one.</div>}
+    {error && <button className="citizen-button small secondary dashboard-refresh" onClick={load}>Retry loading data</button>}
+  </section>
 }

@@ -46,7 +46,7 @@ export default function Sidebar({ collapsed, onToggle }) {
   const navItems = getNavItems()
 
   return (
-    <div className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+    <div className={`sidebar ${collapsed ? 'collapsed' : ''} ${role !== 'admin' ? 'citizen-sidebar' : ''}`}>
       <div className="sidebar-logo">
         <div className="sidebar-logo-icon">
           <Leaf size={24} color="white" />
